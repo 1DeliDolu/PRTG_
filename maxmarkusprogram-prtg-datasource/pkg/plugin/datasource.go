@@ -22,15 +22,30 @@ var (
 	_ backend.CheckHealthHandler    = (*Datasource)(nil)
 	_ instancemgmt.InstanceDisposer = (*Datasource)(nil)
 )
+// Datasource struct with baseURL
+
 
 // NewDatasource creates a new datasource instance.
-func NewDatasource(_ context.Context, _ backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	return &Datasource{}, nil
-}
+func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	config, err := models.LoadPluginSettings(settings)
+	if err != nil {
+		return nil, err
+	}
 
+	// Use config.BaseURL or fall back to default if not set
+	baseURL := fmt.Sprintf("https://%s/api", config.BaseURL)
+
+
+
+	return &Datasource{
+		baseURL: baseURL,
+	}, nil
+}
 // Datasource is an example datasource which can respond to data queries, reports
 // its health and has streaming skills.
-type Datasource struct{}
+type Datasource struct{
+	baseURL string
+}
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
 // created. As soon as datasource settings change detected by SDK old datasource instance will
@@ -61,7 +76,7 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 
 type queryModel struct{}
 
-func (d *Datasource) query(_ context.Context, pCtx backend.PluginContext, query backend.DataQuery) backend.DataResponse {
+func (d *Datasource) query(_ context.Context, _ backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
 
 	// Unmarshal the JSON into our queryModel.
