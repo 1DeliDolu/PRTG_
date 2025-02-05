@@ -9,7 +9,9 @@ import (
 
 type PluginSettings struct {
 	Path    string                `json:"path"`
+	Cache   int                   `json:"cacheTime"`
 	Secrets *SecretPluginSettings `json:"-"`
+	BaseURL string                `json:"baseUrl"`
 }
 
 type SecretPluginSettings struct {

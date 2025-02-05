@@ -9,6 +9,7 @@ datasources:
     version: 1
     editable: true
     jsonData:
-      path: '/resources'
+      path: 'your-prtg-path'
+      cacaheTime: 300
     secureJsonData:
       apiKey: 'api-key'

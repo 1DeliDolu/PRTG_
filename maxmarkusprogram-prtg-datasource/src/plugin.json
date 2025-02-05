@@ -21,6 +21,18 @@
     "version": "%VERSION%",
     "updated": "%TODAY%"
   },
+  "routes": [
+    {
+      "path": "{{.JsonData.url}}",
+      "method": "GET",
+      "urlParams": [
+        {
+          "name": "apitoken",
+          "content": "{{.SecureJsonData.apiKey}}"
+        }
+      ]
+    }
+  ],
   "dependencies": {
     "grafanaDependency": ">=10.4.0",
     "plugins": []

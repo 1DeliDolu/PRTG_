@@ -42,6 +42,16 @@ export function ConfigEditor(props: Props) {
       },
     });
   };
+  // cachetime 
+  const onCacheTimeChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onOptionsChange({
+      ...options,
+      jsonData: {
+        ...jsonData,
+        cacheTime: parseInt(event.target.value, 10),
+      },
+    });
+  }
 
   return (
     <>
@@ -51,7 +61,7 @@ export function ConfigEditor(props: Props) {
           onChange={onPathChange}
           value={jsonData.path}
           placeholder="Enter the path, e.g. /api/v1"
-          width={40}
+          width={60}
         />
       </InlineField>
       <InlineField label="API Key" labelWidth={14} interactive tooltip={'Secure json field (backend only)'}>
@@ -61,9 +71,18 @@ export function ConfigEditor(props: Props) {
           isConfigured={secureJsonFields.apiKey}
           value={secureJsonData?.apiKey}
           placeholder="Enter your API key"
-          width={40}
+          width={60}
           onReset={onResetAPIKey}
           onChange={onAPIKeyChange}
+        />
+      </InlineField>
+      <InlineField label="Cache Time" labelWidth={14} interactive tooltip={'Cache time in seconds'}>
+        <Input
+          id="config-editor-cache-time"
+          onChange={onCacheTimeChange}
+          value={jsonData.cacheTime}
+          placeholder="Enter the cache time"
+          width={60}
         />
       </InlineField>
     </>
