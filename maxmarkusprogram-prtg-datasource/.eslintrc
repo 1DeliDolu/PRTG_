@@ -2,5 +2,16 @@
   "extends": "./.config/.eslintrc",
   "rules": {
     "react/prop-types": "off"
-  }
+  },
+  "eslint.validate": [
+    "typescript",
+    "typescriptreact"
+  ],
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "typescript.validate.enable": true,
+  "js/ts.implicitProjectConfig.checkJs": true
 }
