@@ -7,7 +7,11 @@ type PrtgTableListResponse struct {
     Groups      []PrtgGroupListResponse    `json:"groups,omitempty" xml:"groups,omitempty"`
     Devices     []PrtgDevicesListResponse  `json:"devices,omitempty" xml:"devices,omitempty"`
     Sensors     []PrtgSensorsListResponse  `json:"sensors,omitempty" xml:"sensors,omitempty"`
+    Channels    []PrtgChannelsListResponse `json:"channels,omitempty" xml:"channels,omitempty"`
 }
+
+
+//############################# GROUP LIST RESPONSE ####################################
 
 type PrtgGroupListResponse struct {
     PrtgVersion string                    `json:"prtgversion" xml:"prtg-version"`
@@ -47,6 +51,8 @@ type PrtgGroupListItemStruct struct {
     Warnsens       int     `json:"warnsens" xml:"warnsens"`
 }
 
+
+//############################# DEVICE LIST RESPONSE ####################################
 type PrtgDevicesListResponse struct {
     PrtgVersion string         `json:"prtgversion" xml:"prtg-version"`
     TreeSize    int64          `json:"treesize" xml:"treesize"`
@@ -88,6 +94,8 @@ type PrtgDeviceListItemStruct struct {
     WarnSens       int     `json:"warnsens" xml:"warnsens"`
 }
 
+
+//############################# SENSOR LIST RESPONSE ####################################
 type PrtgSensorsListResponse struct {
     PrtgVersion string         `json:"prtgversion" xml:"prtg-version"`
     TreeSize    int64          `json:"treesize" xml:"treesize"`
@@ -155,6 +163,8 @@ type PrtgSensorListItemStruct struct {
     WarnSensRAW         int     `json:"warnsens_raw" xml:"warnsens_raw"`
 }
 
+//############################# STATUS LIST RESPONSE ####################################
+
 type PrtgStatusListResponse struct {
     PrtgVersion          string `json:"prtgversion" xml:"prtg-version"`
     AckAlarms            string `json:"ackalarms" xml:"ackalarms"`
@@ -190,7 +200,9 @@ type PrtgStatusListResponse struct {
     Version              string `json:"version" xml:"version"`
     WarnSens             string `json:"warnsens" xml:"warnsens"`
 }
-// channel list  PrtgChannelsListResponse
+
+
+//############################# CHANNEL LIST RESPONSE ####################################
 type PrtgChannelsListResponse struct {
     DatetimeRAW float64                `json:"datetime_raw" xml:"datetime_raw"`
     ValueRAW    PrtgChannelValueStruct `json:"value_raw" xml:"value_raw"`
@@ -202,3 +214,17 @@ type PrtgChannelValueStruct struct {
     Channel string `json:"channel,omitempty" xml:"channel,omitempty"`
 }
 
+
+//############################# CHANNEL VALUE RESPONSE ####################################
+
+
+type PrtgHistoricalDataResponse struct {
+    PrtgVersion string       `json:"prtgversion" xml:"prtg-version"`
+    TreeSize    int64        `json:"treesize" xml:"treesize"`
+    histdata      []PrtgValues `json:"values" xml:"values"`
+}
+
+type PrtgValues struct {
+    Datetime string  `json:"datetime" xml:"datetime"`
+    Value    float64 `json:"value" xml:"value"`
+}

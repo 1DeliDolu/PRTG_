@@ -205,3 +205,78 @@ func (a *Api) GetChannels(sensorId string) (*PrtgChannelValueStruct, error) {
 
 	return &response, nil
 }
+// GetValues returns the values of a sensor
+func (a *Api) GetValues(sensorId string) (*PrtgChannelValueStruct, error) {
+	params := map[string]string{
+		"content": "values",
+		"columns": "value_,datetime",
+		"id":      sensorId,
+	}
+
+	body, err := a.baseExecuteRequest("table.json", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var response PrtgChannelValueStruct
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// GetHistoricalData performs a historical data query for a specific sensor
+func (a *Api) GetHistoricalData(sensorID string, startDate, endDate time.Time) (*PrtgHistoricalDataResponse, error) {
+	if sensorID == "" {
+		return nil, fmt.Errorf("invalid query: missing sensor ID")
+	}
+
+	// Calculate time difference in hours
+	hours := endDate.Sub(startDate).Hours()
+
+	// Determine averaging interval based on time range
+	var avg string
+	switch {
+	case hours > 12 && hours < 36:
+		avg = "300"
+	case hours > 36 && hours < 745:
+		avg = "3600"
+	case hours > 745:
+		avg = "86400"
+	default:
+		avg = "0"
+	}
+
+	// Format dates in PRTG format (YYYY-MM-DD-HH-mm-ss)
+	formatDate := func(t time.Time) string {
+		return t.Format("2006-01-02-15-04-05")
+	}
+
+	// Prepare parameters
+	params := map[string]string{
+		"id":         sensorID,
+		"avg":        avg,
+		"sdate":      formatDate(startDate),
+		"edate":      formatDate(endDate),
+		"count":      "50000",
+		"usecaption": "1",
+		"columns":    "datetime,value_",
+	}
+
+	body, err := a.baseExecuteRequest("historicdata.json", params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch historical data: %w", err)
+	}
+
+	var response PrtgHistoricalDataResponse
+		if err := json.Unmarshal(body, &response); err != nil {
+			return nil, fmt.Errorf("failed to parse historical data response: %w", err)
+		}
+	
+		if len(response.histada) == 0 {
+			return nil, fmt.Errorf("no historical data received from PRTG")
+		}
+
+	return &response, nil
+}
