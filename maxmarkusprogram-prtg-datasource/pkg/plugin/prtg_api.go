@@ -108,10 +108,10 @@ func (a *Api) GetStatusList() (*PrtgStatusListResponse, error) {
 }
 
 func (a *Api) GetGroups() (*PrtgGroupListResponse, error) {
-    params := map[string]string{
-        "content": "groups",
-        "columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw,active,active_raw,message,message_raw,priority,priority_raw,status,status_raw,tags,tags_raw,datetime,datetime_raw",
-    }
+	params := map[string]string{
+		"content": "groups",
+		"columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw,active,active_raw,message,message_raw,priority,priority_raw,status,status_raw,tags,tags_raw,datetime,datetime_raw,upsens,upsens_raw,downsens,downsens_raw,warnsens,warnsens_raw,pausedsens,pausedsens_raw,unusualsens,unusualsens_raw,totalsens,totalsens_raw,accessrights,accessrights_raw",
+	}
 
     body, err := a.baseExecuteRequest("table.json", params)
     if err != nil {
@@ -129,7 +129,12 @@ func (a *Api) GetGroups() (*PrtgGroupListResponse, error) {
 func (a *Api) GetDevices() (*PrtgDevicesListResponse, error) {
 	params := map[string]string{
 		"content": "devices",
-		"columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw,active,active_raw,message,message_raw,priority,priority_raw,status,status_raw,tags,tags_raw,datetime,datetime_raw",
+		"columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw," +
+			"active,active_raw,message,message_raw,priority,priority_raw,status,status_raw," +
+			"tags,tags_raw,datetime,datetime_raw,deviceicon,deviceicon_raw,location,location_raw," +
+			"upsens,upsens_raw,downsens,downsens_raw,warnsens,warnsens_raw," +
+			"pausedsens,pausedsens_raw,unusualsens,unusualsens_raw,totalsens,totalsens_raw," +
+			"accessrights,accessrights_raw",
 	}
 
 	body, err := a.baseExecuteRequest("table.json", params)
@@ -148,7 +153,14 @@ func (a *Api) GetDevices() (*PrtgDevicesListResponse, error) {
 func (a *Api) GetSensors() (*PrtgSensorsListResponse, error) {
 	params := map[string]string{
 		"content": "sensors",
-		"columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw,active,active_raw,message,message_raw,priority,priority_raw,status,status_raw,tags,tags_raw,datetime,datetime_raw",
+		"columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw," +
+			"active,active_raw,status,status_raw,message,message_raw,priority,priority_raw," +
+			"tags,tags_raw,datetime,datetime_raw,lastcheck,lastcheck_raw,lastup,lastup_raw,lastdown,lastdown_raw," +
+			"interval,interval_raw,uptime,uptime_raw,uptimetime,uptimetime_raw,uptimesince,uptimesince_raw," +
+			"downtime,downtime_raw,downtimetime,downtimetime_raw,downtimesince,downtimesince_raw," +
+			"upsens,upsens_raw,downsens,downsens_raw,warnsens,warnsens_raw," +
+			"pausedsens,pausedsens_raw,unusualsens,unusualsens_raw,totalsens,totalsens_raw," +
+			"accessrights,accessrights_raw,parentid,parentid_raw",
 	}
 
 	body, err := a.baseExecuteRequest("table.json", params)
@@ -163,4 +175,6 @@ func (a *Api) GetSensors() (*PrtgSensorsListResponse, error) {
 
 	return &response, nil
 }
+
+
 
