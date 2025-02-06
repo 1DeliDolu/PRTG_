@@ -45,9 +45,59 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
       }
       setIsLoading(false);
     }
-
     fetchGroups();
   }, [datasource]);
+
+  useEffect(() => {
+    async function fetchDevices() {
+      setIsLoading(true);
+      try {
+        const response = await datasource.getDevices();
+        if (response && Array.isArray(response.devices)) {
+          const deviceOptions = response.devices.map(device => ({
+            label: device.device,
+            value: device.device.toString(),
+          }));
+          setLists(prev => ({
+            ...prev,
+            devices: deviceOptions,
+          }));
+        } else {
+          console.error('Invalid response format:', response);
+        }
+      } catch (error) {
+        console.error('Error fetching devices:', error);
+      }
+      setIsLoading(false);
+    }
+    fetchDevices();
+  }, [datasource]);
+  
+  useEffect(() => {
+    async function fetchSensors() {
+      setIsLoading(true);
+      try {
+        const response = await datasource.getSensors();
+        if (response && Array.isArray(response.sensors)) {
+          const sensorOptions = response.sensors.map(sensor => ({
+            label: sensor.sensor,
+            value: sensor.sensor.toString(),
+          }));
+          setLists(prev => ({
+            ...prev,
+            sensors: sensorOptions,
+          }));
+        } else {
+          console.error('Invalid response format:', response);
+        }
+      } catch (error) {
+        console.error('Error fetching sensors:', error);
+      }
+      setIsLoading(false);
+    }
+    fetchSensors();
+  }, [datasource]);
+
 
   const onQueryTypeChange = (value: SelectableValue<QueryType>) => {
     onChange({ ...query, queryType: value.value! })

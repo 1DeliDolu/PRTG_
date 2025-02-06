@@ -142,6 +142,10 @@ func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResource
 	switch req.Path {
 	case "groups":
 		return d.handleGetGroups(ctx, sender)
+	case "devices":
+		return d.handleGetDevices(ctx, sender)
+	case "sensors":
+		return d.handleGetSensors(ctx, sender)
 	default:
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusNotFound,
@@ -163,6 +167,58 @@ func (d *Datasource) handleGetGroups(ctx context.Context, sender backend.CallRes
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
 			Body:   []byte(fmt.Sprintf("error marshaling groups: %v", err)),
+		})
+	}
+
+	return sender.Send(&backend.CallResourceResponse{
+		Status: http.StatusOK,
+		Headers: map[string][]string{
+			"Content-Type": {"application/json"},
+		},
+		Body: body,
+	})
+}
+
+func (d *Datasource) handleGetDevices(ctx context.Context, sender backend.CallResourceResponseSender) error {
+	devices, err := d.api.GetDevices()
+	if err != nil {
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusInternalServerError,
+			Body:   []byte(err.Error()),
+		})
+	}
+
+	body, err := json.Marshal(devices)
+	if err != nil {
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusInternalServerError,
+			Body:   []byte(fmt.Sprintf("error marshaling devices: %v", err)),
+		})
+	}
+
+	return sender.Send(&backend.CallResourceResponse{
+		Status: http.StatusOK,
+		Headers: map[string][]string{
+			"Content-Type": {"application/json"},
+		},
+		Body: body,
+	})
+}
+
+func (d *Datasource) handleGetSensors(ctx context.Context, sender backend.CallResourceResponseSender) error {
+	sensors, err := d.api.GetSensors()
+	if err != nil {
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusInternalServerError,
+			Body:   []byte(err.Error()),
+		})
+	}
+
+	body, err := json.Marshal(sensors)
+	if err != nil {
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusInternalServerError,
+			Body:   []byte(fmt.Sprintf("error marshaling sensors: %v", err)),
 		})
 	}
 

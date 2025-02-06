@@ -65,7 +65,7 @@ func (a *Api) baseExecuteRequest(endpoint string, params map[string]string) ([]b
 	client := &http.Client{
 		Timeout: a.timeout,
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ⚠ WARNING: Use only in testing environments
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, 
 		},
 	}
 
@@ -164,19 +164,9 @@ func (a *Api) GetGroups() (*PrtgGroupListResponse, error) {
 func (a *Api) GetDevices() (*PrtgDevicesListResponse, error) {
 	params := map[string]string{
 		"content": "devices",
+		"columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw,active,active_raw,message,message_raw,priority,priority_raw,status,status_raw,tags,tags_raw,datetime,datetime_raw",
 	}
-	return a.executeListRequest(params)
-}
 
-func (a *Api) GetSensors() (*PrtgDevicesListResponse, error) {
-	params := map[string]string{
-		"content": "sensors",
-	}
-	return a.executeListRequest(params)
-}
-
-// Helper method for list requests
-func (a *Api) executeListRequest(params map[string]string) (*PrtgDevicesListResponse, error) {
 	body, err := a.baseExecuteRequest("table.json", params)
 	if err != nil {
 		return nil, err
@@ -186,5 +176,26 @@ func (a *Api) executeListRequest(params map[string]string) (*PrtgDevicesListResp
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
+
 	return &response, nil
 }
+
+func (a *Api) GetSensors() (*PrtgSensorsListResponse, error) {
+	params := map[string]string{
+		"content": "sensors",
+		"columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw,active,active_raw,message,message_raw,priority,priority_raw,status,status_raw,tags,tags_raw,datetime,datetime_raw",
+	}
+
+	body, err := a.baseExecuteRequest("table.json", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var response PrtgSensorsListResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+

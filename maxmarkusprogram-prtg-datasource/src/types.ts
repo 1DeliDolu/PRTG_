@@ -19,6 +19,9 @@ export interface MyQuery extends DataQuery {
   includeDeviceName: boolean;
   includeSensorName: boolean;
   groups: Array<string>;
+  devices: Array<string>;
+  sensors: Array<string>;
+  channels: Array<string>;
 }
 
 export interface DataPoint {
@@ -57,25 +60,8 @@ export interface ListItem {
   visible_name: string;
 }
 
-export interface GroupList extends ListItem {
-}
 
-export interface DeviceList extends ListItem {
-  group: string;
-}
-
-export interface SensorList extends ListItem {
-  group: string;
-  device: string;
-}
-
-export interface ChannelList extends ListItem {
-  group: string;
-  device: string;
-  sensor: string;
-}
-
-export interface PRTGGroup {
+export interface PRTGItem {
   objid: number;
   objid_raw: number;
   group: string;
@@ -102,9 +88,36 @@ export interface PRTGGroup {
 
 export interface PRTGGroupListResponse {
   prtgversion: string;
-  groups: PRTGGroup[];
+  treesize: number;
+  groups: PRTGItem[];
 }
 
 export interface PRTGGroupResponse {
-  groups: PRTGGroup[];
+  groups: PRTGItem[];
+}
+
+export interface PRTGDeviceListResponse {
+  prtgversion: string;
+  treesize: number;
+  devices: PRTGItem[];
+}
+
+export interface PRTGDeviceResponse {
+  devices: PRTGItem[];
+}
+
+export interface PRTGSensorListResponse {
+  prtgversion: string;
+  treesize: number;
+  sensors: PRTGItem[];
+}
+
+export interface PRTGSensorResponse {
+  sensors: PRTGItem[];
+}
+
+export interface PRTGChannelListResponse {
+  prtgversion: string;
+  treesize: number;
+  channels: PRTGItem[];
 }
