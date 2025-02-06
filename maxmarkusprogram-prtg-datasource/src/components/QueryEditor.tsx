@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { InlineField, Select, Stack, FieldSet, InlineSwitch } from '@grafana/ui'
 import { QueryEditorProps, SelectableValue } from '@grafana/data'
 import { DataSource } from '../datasource'
-import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType, filterPropertyList, propertyList } from '../types'
+import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType, filterPropertyList, propertyList, sensorColumnList, groupColumnList, deviceColumnList} from '../types'
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>
 
@@ -200,22 +200,111 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
   }
 
   useEffect(() => {
-    if (isRawMode || isTextMode) {
+    if (isRawMode) {
+      const propertyOptions: Array<SelectableValue<string>> = propertyList.map(item => ({
+        label: item.visible_name,
+        value: item.name + 'raw',
+      }));
+      switch (query.property) {
+        case 'sensor':
+          const filterPropertyOptions: Array<SelectableValue<string>> = sensorColumnList.map(item => ({
+            label: item.visible_name,
+            value: item.name + 'raw',
+          }));
+          setLists(prev => ({
+            ...prev,
+            properties: propertyOptions,
+            filterProperties: filterPropertyOptions,
+          }));
+          break;
+        case 'group':
+          const groupFilterOptions: Array<SelectableValue<string>> = groupColumnList.map(item => ({
+            label: item.visible_name,
+            value: item.name + 'raw',
+          }));
+          setLists(prev => ({
+            ...prev,
+            properties: propertyOptions,
+            filterProperties: groupFilterOptions,
+          }));
+          break;
+        case 'device':
+        case 'device':
+          const deviceFilterOptions: Array<SelectableValue<string>> = deviceColumnList.map(item => ({
+            label: item.visible_name,
+            value: item.name + 'raw',
+          }));
+          setLists(prev => ({
+            ...prev,
+            properties: propertyOptions,  
+            filterProperties: deviceFilterOptions,
+          }));
+          break;
+        default:
+          setLists(prev => ({
+            ...prev,
+            properties: propertyOptions,
+            filterProperties: [],
+          }));
+          break;
+      }
+    }
+  }, [isRawMode]);
+
+  useEffect(() => {
+    if (isTextMode) {
       const propertyOptions: Array<SelectableValue<string>> = propertyList.map(item => ({
         label: item.visible_name,
         value: item.name,
       }));
-      const filterPropertyOptions: Array<SelectableValue<string>> = filterPropertyList.map(item => ({
-        label: item.visible_name,
-        value: item.name,
-      }));
-      setLists(prev => ({
-        ...prev,
-        properties: propertyOptions,
-        filterProperties: filterPropertyOptions,
-      }));
+      switch (query.property) {
+        case 'sensor':
+          const filterPropertyOptions: Array<SelectableValue<string>> = sensorColumnList.map(item => ({
+            label: item.visible_name,
+            value: item.name,
+          }));
+          setLists(prev => ({
+            ...prev,
+            properties: propertyOptions,
+            filterProperties: filterPropertyOptions,
+          }));
+          break;
+        case 'group':
+          const groupFilterOptions: Array<SelectableValue<string>> = groupColumnList.map(item => ({
+            label: item.visible_name,
+            value: item.name,
+          }));
+          setLists(prev => ({
+            ...prev,
+            properties: propertyOptions,
+            filterProperties: groupFilterOptions,
+          }));
+          break;
+        case 'device':
+        case 'device':
+          const deviceFilterOptions: Array<SelectableValue<string>> = deviceColumnList.map(item => ({
+            label: item.visible_name,
+            value: item.name,
+          }));
+          setLists(prev => ({
+            ...prev,
+            properties: propertyOptions,  
+            filterProperties: deviceFilterOptions,
+          }));
+          break;
+        default:
+          setLists(prev => ({
+            ...prev,
+            properties: propertyOptions,
+            filterProperties: [],
+          }));
+          break;
+      }
     }
-  }, [isRawMode, isTextMode]);
+  }, [isTextMode]);
+
+ 
+
 
   return (
     <Stack direction="column" gap={1}>

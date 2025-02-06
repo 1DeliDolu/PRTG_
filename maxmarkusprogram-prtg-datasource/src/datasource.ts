@@ -1,6 +1,6 @@
 import { DataSourceInstanceSettings, ScopedVars } from '@grafana/data';
 import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
-import { MyQuery, MyDataSourceOptions, PRTGGroupListResponse, PRTGDeviceListResponse, PRTGSensorListResponse } from './types';
+import { MyQuery, MyDataSourceOptions, PRTGGroupListResponse, PRTGDeviceListResponse, PRTGSensorListResponse, PRTGChannelListResponse } from './types';
 
 export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
   constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
@@ -29,5 +29,8 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
 
   async getSensors(): Promise<PRTGSensorListResponse> {
     return this.getResource('sensors');
+  }
+  async getChannels(): Promise<PRTGChannelListResponse> {
+    return this.getResource('channels');
   }
 }

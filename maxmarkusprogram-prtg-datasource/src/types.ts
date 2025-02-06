@@ -119,7 +119,15 @@ export interface PRTGSensorResponse {
 export interface PRTGChannelListResponse {
   prtgversion: string;
   treesize: number;
-  channels: PRTGItem[];
+  histdata: PRTGItemChannel[];
+}
+
+export interface PRTGItemChannel {
+  channel: string;
+  channel_raw: string;
+  datetime: string;
+  datetime_raw: number;
+  [key: string]: string | number; 
 }
 
 export const filterPropertyList = [
@@ -149,3 +157,81 @@ export interface PropertyOption {
   label: string;
   value: PropertyItem['name'];
 }
+
+
+//##################################################################################################
+export type SensorColumnItem = typeof sensorColumnList[number];
+export type GroupColumnItem = typeof groupColumnList[number];
+export type DeviceColumnItem = typeof deviceColumnList[number];
+
+export interface ColumnOption {
+  label: string;
+  value: string;
+}
+
+export const sensorColumnList = [
+
+  { name: 'tags', visible_name: 'Tags' },
+  { name: 'active', visible_name: 'Active' },
+  { name: 'status', visible_name: 'Status' },
+  { name: 'message', visible_name: 'Detailed Message' },
+  { name: 'priority', visible_name: 'Priority' },
+  { name: 'lastcheck', visible_name: 'Last Check Time' },
+  { name: 'lastup', visible_name: 'Last Up Time' },
+  { name: 'lastdown', visible_name: 'Last Down Time' },
+
+  { name: 'interval', visible_name: 'Effective Interval' },
+  { name: 'uptime', visible_name: 'Uptime Percentage' },
+  { name: 'uptimetime', visible_name: 'Uptime Duration' },
+  { name: 'uptimesince', visible_name: 'Elapsed Time Since Last Down' },
+  { name: 'downtime', visible_name: 'Downtime Percentage' },
+  { name: 'downtimetime', visible_name: 'Downtime Duration' },
+  { name: 'downtimesince', visible_name: 'Elapsed Time Since Last Up' },
+
+  { name: 'upsens', visible_name: 'Up Sensors Count' },
+  { name: 'downsens', visible_name: 'Down Sensors Count' },
+  { name: 'warnsens', visible_name: 'Warning Sensors Count' },
+  { name: 'pausedsens', visible_name: 'Paused Sensors Count' },
+  { name: 'unusualsens', visible_name: 'Unusual Sensors Count' },
+  { name: 'totalsens', visible_name: 'Total Sensors Count' },
+  { name: 'accessrights', visible_name: 'Access Rights' },
+  { name: 'parentid', visible_name: 'Parent Object ID' },
+] as const;
+
+export const groupColumnList = [
+
+  { name: 'tags', visible_name: 'Tags' },
+  { name: 'active', visible_name: 'Active' },
+  { name: 'status', visible_name: 'Status' },
+  { name: 'message', visible_name: 'Detailed Message' },
+  { name: 'priority', visible_name: 'Priority' },
+  { name: 'upsens', visible_name: 'Up Sensors Count' },
+  { name: 'downsens', visible_name: 'Down Sensors Count' },
+  { name: 'warnsens', visible_name: 'Warning Sensors Count' },
+  { name: 'pausedsens', visible_name: 'Paused Sensors Count' },
+  { name: 'unusualsens', visible_name: 'Unusual Sensors Count' },
+  { name: 'totalsens', visible_name: 'Total Sensors Count' },
+  { name: 'accessrights', visible_name: 'Access Rights' },
+
+] as const;
+
+export const deviceColumnList = [
+
+  { name: 'tags', visible_name: 'Tags' },
+  { name: 'active', visible_name: 'Active' },
+  { name: 'status', visible_name: 'Status' },
+  { name: 'message', visible_name: 'Detailed Message' },
+  { name: 'priority', visible_name: 'Priority' },
+
+  { name: 'upsens', visible_name: 'Up Sensors Count' },
+  { name: 'downsens', visible_name: 'Down Sensors Count' },
+  { name: 'warnsens', visible_name: 'Warning Sensors Count' },
+  { name: 'pausedsens', visible_name: 'Paused Sensors Count' },
+  { name: 'unusualsens', visible_name: 'Unusual Sensors Count' },
+  { name: 'totalsens', visible_name: 'Total Sensors Count' },
+  { name: 'location', visible_name: 'Location' },
+
+  { name: 'deviceicon', visible_name: 'Device Icon' },
+  { name: 'accessrights', visible_name: 'Access Rights' },
+
+] as const;
