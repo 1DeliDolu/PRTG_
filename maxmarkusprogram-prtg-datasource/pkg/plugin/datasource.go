@@ -34,7 +34,7 @@ func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 		return nil, err
 	}
 
-	baseURL := fmt.Sprintf("https://%s/api/", config.Path)
+	baseURL := fmt.Sprintf("https://%s", config.Path)
 
 	fmt.Println("baseURL: ", baseURL)
 
