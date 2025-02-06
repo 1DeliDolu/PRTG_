@@ -111,6 +111,10 @@ func (d *Datasource) query(_ context.Context, _ backend.PluginContext, query bac
 	return response
 }
 
+
+
+/* ########################################## CHECK HEALTH   ############################################ */
+
 // CheckHealth handles health checks sent from Grafana to the plugin.
 // The main use case for these health checks is the test button on the
 // datasource configuration page which allows users to verify that
@@ -137,7 +141,10 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 	}, nil
 }
 
-// CallResource handles all resource calls
+
+
+/* ########################################## CALL RESOURCE   ############################################ */
+
 func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
 	switch req.Path {
 	case "groups":
