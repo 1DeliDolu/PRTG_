@@ -14,6 +14,8 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
 
   const [group, setGroup] = useState<string>('')
   const [device, setDevice] = useState<string>('')
+  const [sensor, setSensor] = useState<string>('')
+  const [channel, setChannel] = useState<string>('')
 
 
   const [lists, setLists] = useState({
@@ -112,25 +114,58 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
   }, [datasource, device]);
 
   const onQueryTypeChange = (value: SelectableValue<QueryType>) => {
-    onChange({ ...query, queryType: value.value! }) 
+    onChange({ 
+      ...query, 
+      queryType: value.value!,
+      group: '',
+      device: '',
+      sensor: '',
+      channel: ''
+    })
+    setGroup('')
+    setDevice('')
+    setSensor('')
+    setChannel('')
     onRunQuery()
   }
 
   // Add other onChange handlers for Select components
   const onGroupChange = (value: SelectableValue<string>) => {
-    onChange({ ...query, group: value.value! })
+    onChange({ 
+      ...query, 
+      group: value.value!,
+      device: '',
+      sensor: '',
+      channel: ''
+    })
     setGroup(value.value!)
+    setDevice('')
+    setSensor('')
+    setChannel('')
     onRunQuery()
   }
 
   const onDeviceChange = (value: SelectableValue<string>) => {
-    onChange({ ...query, device: value.value! })
+    onChange({ 
+      ...query, 
+      device: value.value!,
+      sensor: '',
+      channel: ''
+    })
     setDevice(value.value!)
+    setSensor('')
+    setChannel('')
     onRunQuery()
   }
 
   const onSensorChange = (value: SelectableValue<string>) => {
-    onChange({ ...query, sensor: value.value! })
+    onChange({ 
+      ...query, 
+      sensor: value.value!,
+      channel: ''
+    })
+    setSensor(value.value!)
+    setChannel('')
     onRunQuery()
   }
 
