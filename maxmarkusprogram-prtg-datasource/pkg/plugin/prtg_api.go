@@ -274,7 +274,7 @@ func (a *Api) GetHistoricalData(sensorID string, startDate, endDate time.Time) (
 			return nil, fmt.Errorf("failed to parse historical data response: %w", err)
 		}
 	
-		if len(response.histada) == 0 {
+		if len(response.HistData) == 0 {
 			return nil, fmt.Errorf("no historical data received from PRTG")
 		}
 

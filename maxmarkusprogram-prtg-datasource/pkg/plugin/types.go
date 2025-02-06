@@ -204,9 +204,9 @@ type PrtgStatusListResponse struct {
 
 //############################# CHANNEL LIST RESPONSE ####################################
 type PrtgChannelsListResponse struct {
-    DatetimeRAW float64                `json:"datetime_raw" xml:"datetime_raw"`
-    ValueRAW    PrtgChannelValueStruct `json:"value_raw" xml:"value_raw"`
-    StatusRAW   int                    `json:"status_raw,omitempty" xml:"status_raw,omitempty"`
+    PrtgVersion string       `json:"prtg-version" xml:"prtg-version"`
+    TreeSize    int64        `json:"treesize" xml:"treesize"`
+    HistData    []PrtgValues `json:"histdata" xml:"histdata"`
 }
 
 type PrtgChannelValueStruct struct {
@@ -219,9 +219,9 @@ type PrtgChannelValueStruct struct {
 
 
 type PrtgHistoricalDataResponse struct {
-    PrtgVersion string       `json:"prtgversion" xml:"prtg-version"`
+    PrtgVersion string       `json:"prtg-version" xml:"prtg-version"`
     TreeSize    int64        `json:"treesize" xml:"treesize"`
-    histdata      []PrtgValues `json:"values" xml:"values"`
+    HistData      []PrtgValues `json:"values" xml:"values"`
 }
 
 type PrtgValues struct {
