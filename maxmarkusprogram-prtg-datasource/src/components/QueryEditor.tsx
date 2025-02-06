@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { InlineField, Select, Stack, FieldSet, InlineSwitch } from '@grafana/ui'
 import { QueryEditorProps, SelectableValue } from '@grafana/data'
 import { DataSource } from '../datasource'
-import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType, filterPropertyList, propertyList, sensorColumnList, groupColumnList, deviceColumnList} from '../types'
+import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType , propertyList, sensorColumnList, groupColumnList, deviceColumnList} from '../types'
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>
 
