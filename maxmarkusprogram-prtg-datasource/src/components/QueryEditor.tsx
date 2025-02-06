@@ -11,6 +11,11 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
   const isRawMode = query.queryType === QueryType.Raw
   const isTextMode = query.queryType === QueryType.Text
 
+
+  const [group, setGroup] = useState<string>('')
+  const [device, setDevice] = useState<string>('')
+
+
   const [lists, setLists] = useState({
     groups: [] as Array<SelectableValue<string>>,
     devices: [] as Array<SelectableValue<string>>,
@@ -54,7 +59,11 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
       try {
         const response = await datasource.getDevices();
         if (response && Array.isArray(response.devices)) {
-          const deviceOptions = response.devices.map(device => ({
+          const filteredDevices = group 
+            ? response.devices.filter(device => device.group === group)
+            : response.devices;
+          
+          const deviceOptions = filteredDevices.map(device => ({
             label: device.device,
             value: device.device.toString(),
           }));
@@ -71,15 +80,19 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
       setIsLoading(false);
     }
     fetchDevices();
-  }, [datasource]);
-  
+  }, [datasource, group]);
+
   useEffect(() => {
     async function fetchSensors() {
       setIsLoading(true);
       try {
         const response = await datasource.getSensors();
         if (response && Array.isArray(response.sensors)) {
-          const sensorOptions = response.sensors.map(sensor => ({
+          const filteredSensors = device 
+            ? response.sensors.filter(sensor => sensor.device === device)
+            : response.sensors;
+
+          const sensorOptions = filteredSensors.map(sensor => ({
             label: sensor.sensor,
             value: sensor.sensor.toString(),
           }));
@@ -96,22 +109,23 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
       setIsLoading(false);
     }
     fetchSensors();
-  }, [datasource]);
-
+  }, [datasource, device]);
 
   const onQueryTypeChange = (value: SelectableValue<QueryType>) => {
-    onChange({ ...query, queryType: value.value! })
+    onChange({ ...query, queryType: value.value! }) 
     onRunQuery()
   }
 
   // Add other onChange handlers for Select components
   const onGroupChange = (value: SelectableValue<string>) => {
     onChange({ ...query, group: value.value! })
+    setGroup(value.value!)
     onRunQuery()
   }
 
   const onDeviceChange = (value: SelectableValue<string>) => {
     onChange({ ...query, device: value.value! })
+    setDevice(value.value!)
     onRunQuery()
   }
 
@@ -140,12 +154,12 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     onRunQuery()
   }
 
-  const onIncludeDevice = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onIncludeDeviceName = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({ ...query, includeDeviceName: e.currentTarget.checked })
     onRunQuery()
   }
 
-  const onIncludeSensor = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onIncludeSensorName = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange({ ...query, includeSensorName: e.currentTarget.checked })
     onRunQuery()
   }
@@ -246,7 +260,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
               labelWidth={15}>
               <InlineSwitch
                 value={query.includeDeviceName || false}
-                onChange={onIncludeDevice} />
+                onChange={onIncludeDeviceName} />
             </InlineField>
 
             <InlineField
@@ -254,13 +268,37 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
               labelWidth={15}>
               <InlineSwitch
                 value={query.includeSensorName || false}
-                onChange={onIncludeSensor} />
+                onChange={onIncludeSensorName} />
             </InlineField>
           </Stack>
         </FieldSet>
       )}
 
-      {isTextMode && isRawMode && (
+      {isTextMode && (
+        <FieldSet label="Options">
+          <Stack direction="row" gap={1}>
+            <InlineField label="Property"
+              labelWidth={16}>
+              <Select
+                options={lists.properties}
+                value={query.property}
+                onChange={onPropertyChange}
+                width={32} />
+            </InlineField>
+            <InlineField
+              label="Filter Property"
+              labelWidth={16}>
+              <Select
+                options={lists.filterProperties}
+                value={query.filterProperty}
+                onChange={onFilterPropertyChange}
+                width={32}
+              />
+            </InlineField>
+          </Stack>
+        </FieldSet>
+      )}
+      {isRawMode && (
         <FieldSet label="Options">
           <Stack direction="row" gap={1}>
             <InlineField label="Property"
