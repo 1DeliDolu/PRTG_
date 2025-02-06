@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/maxmarkusprogram/prtg/pkg/models"
+	"github.com/maxmarkusprogram/prtg/pkg/plugin"
+
 )
 
 // Make sure Datasource implements required interfaces. This is important to do
@@ -21,9 +24,14 @@ var (
 	_ backend.QueryDataHandler      = (*Datasource)(nil)
 	_ backend.CheckHealthHandler    = (*Datasource)(nil)
 	_ instancemgmt.InstanceDisposer = (*Datasource)(nil)
+	_ backend.CallResourceHandler   = (*Datasource)(nil)
 )
-// Datasource struct with baseURL
 
+// Datasource struct with baseURL and api
+type Datasource struct {
+	baseURL string
+	api     *plugin.Api
+}
 
 // NewDatasource creates a new datasource instance.
 func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
@@ -32,19 +40,20 @@ func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 		return nil, err
 	}
 
-	// Use config.BaseURL or fall back to default if not set
-	baseURL := fmt.Sprintf("https://%s/api", config.BaseURL)
+	baseURL := fmt.Sprintf("https://%s/api/table.json?apitoken=%s&content=groups&columns=group", config.Path, config.Secrets.ApiKey)
 
-
+	fmt.Println("baseURL: ", baseURL)
+	
+	// Default cache time if not set
+	cacheTime := config.CacheTime
+	if cacheTime <= 0 {
+		cacheTime = 30 * time.Second // default cache time
+	}
 
 	return &Datasource{
 		baseURL: baseURL,
+		api:     plugin.NewApi(baseURL, config.Secrets.ApiKey, cacheTime, 10 * time.Second),
 	}, nil
-}
-// Datasource is an example datasource which can respond to data queries, reports
-// its health and has streaming skills.
-type Datasource struct{
-	baseURL string
 }
 
 // Dispose here tells plugin SDK that plugin wants to clean up resources when a new instance
@@ -129,3 +138,43 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 		Message: "Data source is working",
 	}, nil
 }
+
+// CallResource handles all resource calls
+func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
+	switch req.Path {
+	case "groups":
+		return d.handleGetGroups(ctx, sender)
+	default:
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusNotFound,
+		})
+	}
+}
+
+func (d *Datasource) handleGetGroups(ctx context.Context, sender backend.CallResourceResponseSender) error {
+	groups, err := d.api.GetGroups()
+	if err != nil {
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusInternalServerError,
+			Body:   []byte(err.Error()),
+		})
+	}
+
+	body, err := json.Marshal(groups)
+	if err != nil {
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusInternalServerError,
+			Body:   []byte(fmt.Sprintf("error marshaling groups: %v", err)),
+		})
+	}
+
+	return sender.Send(&backend.CallResourceResponse{
+		Status: http.StatusOK,
+		Headers: map[string][]string{
+			"Content-Type": {"application/json"},
+		},
+		Body: body,
+	})
+}
+
+

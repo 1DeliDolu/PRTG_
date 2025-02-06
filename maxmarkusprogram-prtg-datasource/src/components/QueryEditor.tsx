@@ -1,18 +1,17 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { InlineField, Select, Stack, FieldSet, InlineSwitch } from '@grafana/ui'
 import { QueryEditorProps, SelectableValue } from '@grafana/data'
 import { DataSource } from '../datasource'
-import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType } from '../types'
+import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType} from '../types'
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>
 
-export function QueryEditor({ query, onChange, onRunQuery}: Props) {
+export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) {
   const isMetricsMode = query.queryType === QueryType.Metrics
   const isRawMode = query.queryType === QueryType.Raw
   const isTextMode = query.queryType === QueryType.Text
 
-  // Lists state (you'll need to implement the logic to populate these)
-  const lists = {
+  const [lists, setLists] = useState({
     groups: [] as Array<SelectableValue<string>>,
     devices: [] as Array<SelectableValue<string>>,
     sensors: [] as Array<SelectableValue<string>>,
@@ -20,7 +19,35 @@ export function QueryEditor({ query, onChange, onRunQuery}: Props) {
     values: [] as Array<SelectableValue<string>>,
     properties: [] as Array<SelectableValue<string>>,
     filterProperties: [] as Array<SelectableValue<string>>,
-  }
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchGroups() {
+      setIsLoading(true);
+      try {
+        const response = await datasource.getGroups();
+        if (response && Array.isArray(response.groups)) {
+          const groupOptions = response.groups.map(group => ({
+            label: group.group,
+            value: group.objid.toString(),
+          }));
+          setLists(prev => ({
+            ...prev,
+            groups: groupOptions,
+          }));
+        } else {
+          console.error('Invalid response format:', response);
+        }
+      } catch (error) {
+        console.error('Error fetching groups:', error);
+      }
+      setIsLoading(false);
+    }
+
+    fetchGroups();
+  }, [datasource]);
 
   const onQueryTypeChange = (value: SelectableValue<QueryType>) => {
     onChange({ ...query, queryType: value.value! })
@@ -89,7 +116,7 @@ export function QueryEditor({ query, onChange, onRunQuery}: Props) {
 
             <InlineField label="Group" labelWidth={20} grow>
             <Select
-              isLoading={!lists.groups.length}
+              isLoading={isLoading}
               options={lists.groups}
               value={query.group}
               onChange={onGroupChange}

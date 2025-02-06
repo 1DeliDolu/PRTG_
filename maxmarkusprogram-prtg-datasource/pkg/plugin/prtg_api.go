@@ -1,184 +1,171 @@
 package plugin
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"time"
 )
 
-// Client verwaltet die Serverdaten und HTTP-Client-Parameter für PRTG.
-type Client struct {
-	Server       string // PRTG-Server-URL
-	Username     string // Benutzername
-	Password     string // Passwort
-	PasswordHash string // Passwort-Hash (optional)
-	Timeout      time.Duration // Timeout für Anfragen
-}
-
-var (
-	defaultTimeout         = 10 * time.Second
-	deltaHistoricThreshold = 31 * 24 * time.Hour // 31 Tage
-	dateFormat             = "2006-01-02-15-04-05"
-)
-
-const (
-	GetSensorDetailsEndpoint     = "/api/getsensordetails.json"
-	GetSensorDetailsEndpointXML  = "/api/getsensordetails.xml"
-	GetTableListsEndpoint        = "/api/table.json"
-	GetHistoricDatasEndpoint     = "/api/historicdata.json"
-	GetHistoricDatasEndpointXML  = "/api/historicdata.xml"
-	GetSensorTreesEndpoint       = "/api/table.xml"
-	userAgent                    = "golang-prtg-api"
-)
-
-// PrtgSensorTreeResponse represents the response structure for sensor tree data
-type PrtgSensorTreeResponse struct {
-	Prtg struct {
-		TreeSize int    `json:"treesize"`
-		Version  string `json:"version"`
-		Items    []struct {
-			Name     string `json:"name"`
-			SensorID int64  `json:"objid"`
-			Type     string `json:"type"`
-			Tags     string `json:"tags"`
-		} `json:"items"`
-	} `json:"prtg"`
-}
-
-// NewClient erstellt eine neue PRTG-Client-Instanz.
-func NewClient(server, username, password string) *Client {
-	return &Client{
-		Server:   server,
-		Username: username,
-		Password: password,
-		Timeout:  defaultTimeout,
-	}
-}
-
-// NewClientWithHashedPass erstellt eine neue Client-Instanz mit Passwort-Hash.
-func NewClientWithHashedPass(server, username, passwordHash string) *Client {
-	return &Client{
-		Server:       server,
-		Username:     username,
-		PasswordHash: passwordHash,
-		Timeout:      defaultTimeout,
-	}
-}
-
-// SetContextTimeout setzt das Timeout für HTTP-Anfragen.
-func (c *Client) SetContextTimeout(timeout time.Duration) {
-	if timeout <= 0 {
-		c.Timeout = defaultTimeout
-	} else {
-		c.Timeout = timeout
-	}
-}
-
-func (c *Client) getTemplateUrlQuery() url.Values {
-	q := url.Values{}
-	q.Set("username", c.Username)
-	if (c.Password != "") {
-		q.Set("password", c.Password)
-	}
-	if (c.PasswordHash != "") {
-		q.Set("passhash", c.PasswordHash)
-	}
-	return q
-}
-
-func (c *Client) getCompleteUrl(p string, q url.Values) (string, error) {
-	u, err := url.Parse(c.Server)
+// buildApiUrl creates a standardized PRTG API URL
+func (a *Api) buildApiUrl(method string, params map[string]string) (string, error) {
+	baseUrl := fmt.Sprintf("%s/api/%s", a.baseURL, method)
+	u, err := url.Parse(baseUrl)
 	if err != nil {
-		return "", fmt.Errorf("ungültige URL: %w", err)
+		return "", fmt.Errorf("invalid URL: %w", err)
 	}
-	u.Path = p
+
+	// Add query parameters
+	q := url.Values{}
+	q.Set("apitoken", a.apiKey)
+
+	// Add additional parameters
+	for key, value := range params {
+		q.Set(key, value)
+	}
+
 	u.RawQuery = q.Encode()
 	return u.String(), nil
 }
 
-// GetPrtgVersion gibt die PRTG-Version des angegebenen Servers zurück.
-func (c *Client) GetPrtgVersion() (string, error) {
-	q := c.getTemplateUrlQuery()
-	q.Set("id", "0")
-
-	u, err := c.getCompleteUrl(GetSensorDetailsEndpoint, q)
-	if err != nil {
-		return "", err
+// SetTimeout sets the API request timeout
+func (a *Api) SetTimeout(timeout time.Duration) {
+	if timeout > 0 {
+		a.timeout = timeout
 	}
-
-	var sensorDetailResp prtgSensorDetailsResponse
-	if err := getPrtgResponse(u, c.Timeout.Nanoseconds(), &sensorDetailResp); err != nil {
-		return "", err
-	}
-	return sensorDetailResp.PrtgVersion, nil
 }
 
-// GetSensorDetail ruft die Details eines Sensors ab.
-func (c *Client) GetSensorDetail(id int64) (*PrtgSensorData, error) {
-	q := c.getTemplateUrlQuery()
-	q.Set("id", fmt.Sprintf("%v", id))
-
-	u, err := c.getCompleteUrl(GetSensorDetailsEndpoint, q)
+// baseExecuteRequest handles the common HTTP request logic
+func (a *Api) baseExecuteRequest(endpoint string, params map[string]string) ([]byte, error) {
+	apiUrl, err := a.buildApiUrl(endpoint, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to build URL: %w", err)
 	}
 
-	var sensorDetailResp prtgSensorDetailsResponse
-	if err := getPrtgResponse(u, c.Timeout.Nanoseconds(), &sensorDetailResp); err != nil {
-		return nil, err
+	client := &http.Client{
+		Timeout: a.timeout,
 	}
-	return &sensorDetailResp.SensorData, nil
+
+	req, err := http.NewRequest("GET", apiUrl, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusForbidden {
+		return nil, fmt.Errorf("access denied: please verify API token and permissions")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	return io.ReadAll(resp.Body)
 }
 
-// GetHistoricData ruft historische Sensordaten ab.
-func (c *Client) GetHistoricData(id, average int64, startDate, endDate time.Time) ([]PrtgHistoricData, error) {
-	if id < 0 || average < 0 {
-		return nil, fmt.Errorf("ID und Durchschnittswert müssen größer oder gleich null sein")
-	}
-	if delta := endDate.Sub(startDate); delta < 0 || delta > deltaHistoricThreshold {
-		return nil, fmt.Errorf("datenbereich überschreitet 31 tage")
+// Specific API methods using the base request
+func (a *Api) GetSensorStatus(sensorId string) (*PrtgSensorDetailsResponse, error) {
+	params := map[string]string{
+		"id":      sensorId,
+		"content": "sensors",
 	}
 
-	q := c.getTemplateUrlQuery()
-	q.Set("id", fmt.Sprintf("%v", id))
-	q.Set("avg", fmt.Sprintf("%v", average))
-	q.Set("sDate", startDate.Format(dateFormat))
-	q.Set("eDate", endDate.Format(dateFormat))
-	q.Set("usecaption", "1")
-
-	u, err := c.getCompleteUrl(GetHistoricDatasEndpoint, q)
-	if err != nil {
-		return nil, err
-	}
-
-	var histDataResp prtgHistoricDataResponse
-	if err := getPrtgResponse(u, c.Timeout.Nanoseconds(), &histDataResp); err != nil {
-		return nil, err
-	}
-	if len(histDataResp.HistoricData) == 0 {
-		return nil, fmt.Errorf("keine daten gefunden")
-	}
-	return histDataResp.HistoricData, nil
-}
-
-// GetSensorTree gibt die Baumstruktur eines Sensors zurück.
-func (c *Client) GetSensorTree(id int64) (*PrtgSensorTreeResponse, error) {
-	if id < 0 {
-		return nil, fmt.Errorf("ID muss größer oder gleich null sein")
-	}
-
-	q := c.getTemplateUrlQuery()
-	q.Set("id", fmt.Sprintf("%v", id))
-	q.Set("content", "sensortree")
-
-	u, err := c.getCompleteUrl(GetSensorTreesEndpoint, q)
+	body, err := a.baseExecuteRequest("table.json", params)
 	if err != nil {
 		return nil, err
 	}
 
-	var tableTreeResp PrtgSensorTreeResponse
-	if err := getPrtgResponse(u, c.Timeout.Nanoseconds(), &tableTreeResp); err != nil {
+	var response PrtgSensorDetailsResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	return &response, nil
+}
+
+func (a *Api) GetTableList() (*PrtgTableListResponse, error) {
+	params := map[string]string{
+		"content": "groups,devices,sensors",
+	}
+
+	body, err := a.baseExecuteRequest("table.json", params)
+	if err != nil {
 		return nil, err
 	}
-	return &tableTreeResp, nil
+
+	var response PrtgTableListResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	return &response, nil
 }
+
+func (a *Api) GetStatusList() (*PrtgStatusListResponse, error) {
+	body, err := a.baseExecuteRequest("status.json", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response PrtgStatusListResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	return &response, nil
+}
+
+func (a *Api) GetGroups() (*PrtgGroupListResponse, error) {
+    params := map[string]string{
+        "content": "groups",
+    }
+
+    body, err := a.baseExecuteRequest("table.json", params)
+    if err != nil {
+        return nil, err
+    }
+fmt.Println(string(body))
+    var response PrtgGroupListResponse
+    if err := json.Unmarshal(body, &response); err != nil {
+        return nil, fmt.Errorf("failed to parse response: %w", err)
+    }
+
+    return &response, nil
+}
+
+func (a *Api) GetDevices() (*PrtgDevicesListResponse, error) {
+	params := map[string]string{
+		"content": "devices",
+	}
+	return a.executeListRequest(params)
+}
+
+func (a *Api) GetSensors() (*PrtgDevicesListResponse, error) {
+	params := map[string]string{
+		"content": "sensors",
+	}
+	return a.executeListRequest(params)
+}
+
+// Helper method for list requests
+func (a *Api) executeListRequest(params map[string]string) (*PrtgDevicesListResponse, error) {
+	body, err := a.baseExecuteRequest("table.json", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var response PrtgDevicesListResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+	return &response, nil
+}
+
+
+

@@ -112,9 +112,6 @@ To trigger the workflow we need to push a version tag to github. This can be ach
 
 cd /mnt/d/Praxis/PRTG/maxmarkusprogram-prtg-datasource
 
-
-
-
 ### Run the following commands to get started:
 
     *`cd ./maxmarkusprogram-prtg-datasource`
@@ -124,3 +121,9 @@ cd /mnt/d/Praxis/PRTG/maxmarkusprogram-prtg-datasource
     * `mage -v build:linux` to build the plugin backend code. Rerun this command every time you edit your backend files.
     * `docker compose up` to start a grafana development server.
     * Open http://localhost:3000 in your browser to create a dashboard to begin developing your plugin.
+
+
+## Rebuild & Restart Grafana
+
+`npm run build
+sudo systemctl restart grafana-server`

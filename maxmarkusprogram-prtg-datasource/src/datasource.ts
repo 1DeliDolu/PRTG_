@@ -1,15 +1,10 @@
-import { DataSourceInstanceSettings, CoreApp, ScopedVars } from '@grafana/data';
+import { DataSourceInstanceSettings, ScopedVars } from '@grafana/data';
 import { DataSourceWithBackend, getTemplateSrv } from '@grafana/runtime';
-
-import { MyQuery, MyDataSourceOptions, DEFAULT_QUERY } from './types';
+import { MyQuery, MyDataSourceOptions, PRTGGroupListResponse } from './types';
 
 export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
   constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
     super(instanceSettings);
-  }
-
-  getDefaultQuery(_: CoreApp): Partial<MyQuery> {
-    return DEFAULT_QUERY;
   }
 
   applyTemplateVariables(query: MyQuery, scopedVars: ScopedVars) {
@@ -22,5 +17,9 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
   filterQuery(query: MyQuery): boolean {
     // if no query has been provided, prevent the query from being executed
     return !!query.channel;
+  }
+
+  async getGroups(): Promise<PRTGGroupListResponse> {
+    return this.getResource('groups');
   }
 }

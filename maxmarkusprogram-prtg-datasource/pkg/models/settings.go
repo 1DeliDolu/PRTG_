@@ -3,15 +3,15 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 )
 
 type PluginSettings struct {
-	Path    string                `json:"path"`
-	Cache   int                   `json:"cacheTime"`
-	Secrets *SecretPluginSettings `json:"-"`
-	BaseURL string                `json:"baseUrl"`
+	Path      string                `json:"path"`
+	CacheTime time.Duration         `json:"cacheTime"`
+	Secrets   *SecretPluginSettings `json:"-"`
 }
 
 type SecretPluginSettings struct {
