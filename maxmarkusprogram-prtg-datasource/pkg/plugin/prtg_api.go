@@ -128,8 +128,7 @@ func (a *Api) GetGroups() (*PrtgGroupListResponse, error) {
 func (a *Api) GetDevices() (*PrtgDevicesListResponse, error) {
 	params := map[string]string{
 		"content": "devices",
-		"columns": "objid,group,device,sensor,channel,active,message,priority,status," +
-			"tags,datetime,deviceicon,location,upsens,downsens,warnsens,pausedsens,unusualsens,totalsens,accessrights",
+		"columns": "accessrights,active,channel,datetime,device,deviceicon,downsens,group,location,message,objid,pausedsens,priority,sensor,status,tags,totalsens,unusualsens,upsens,warnsens",
 	}
 
 	body, err := a.baseExecuteRequest("table.json", params)
@@ -164,7 +163,7 @@ func (a *Api) GetSensors() (*PrtgSensorsListResponse, error) {
 	return &response, nil
 }
 
-func (a *Api) GetChanelValues(sensorId string) (*PrtgChannelValueStruct, error) {
+func (a *Api) GetChannels(sensorId string) (*PrtgChannelValueStruct, error) {
 	params := map[string]string{
 		"content":    "values",
 		"columns":    "value_,datetime",
@@ -186,25 +185,6 @@ func (a *Api) GetChanelValues(sensorId string) (*PrtgChannelValueStruct, error) 
 	return &response, nil
 }
 
-func (a *Api) GetChannels(sensorId string) (*PrtgChannelValueStruct, error) {
-	params := map[string]string{
-		"content": "channels",
-		"columns": "objid,channel",
-		"id":      sensorId,
-	}
-
-	body, err := a.baseExecuteRequest("table.json", params)
-	if err != nil {
-		return nil, err
-	}
-
-	var response PrtgChannelValueStruct
-	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	return &response, nil
-}
 // GetValues returns the values of a sensor
 func (a *Api) GetValues(sensorId string) (*PrtgChannelValueStruct, error) {
 	params := map[string]string{
