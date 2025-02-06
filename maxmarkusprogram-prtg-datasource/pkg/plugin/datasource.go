@@ -25,11 +25,7 @@ var (
 	_ backend.CallResourceHandler   = (*Datasource)(nil)
 )
 
-// Datasource struct with baseURL and api
-type Datasource struct {
-	baseURL string
-	api     *Api
-}
+
 
 // NewDatasource creates a new datasource instance.
 func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
@@ -38,7 +34,7 @@ func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 		return nil, err
 	}
 
-	baseURL := fmt.Sprintf("https://%s/api/table.json?apitoken=%s&content=groups&columns=group", config.Path, config.Secrets.ApiKey)
+	baseURL := fmt.Sprintf("https://%s/api/", config.Path)
 
 	fmt.Println("baseURL: ", baseURL)
 
@@ -81,7 +77,7 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 	return response, nil
 }
 
-type queryModel struct{}
+
 
 func (d *Datasource) query(_ context.Context, _ backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
@@ -95,15 +91,107 @@ func (d *Datasource) query(_ context.Context, _ backend.PluginContext, query bac
 	}
 
 	// create data frame response.
-	// For an overview on data frames and how grafana handles them:
-	// https://grafana.com/developers/plugin-tools/introduction/data-frames
 	frame := data.NewFrame("response")
 
-	// add fields.
-	frame.Fields = append(frame.Fields,
-		data.NewField("time", nil, []time.Time{query.TimeRange.From, query.TimeRange.To}),
-		data.NewField("values", nil, []int64{10, 20}),
-	)
+	// add fields based on query type
+	switch qm.QueryType {
+	case "Metrics":
+		historicalData, err := d.api.GetHistoricalData(qm.Sensor, query.TimeRange.From, query.TimeRange.To)
+		if err != nil {
+			return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching historical data: %v", err))
+		}
+
+		times := make([]time.Time, len(historicalData.HistData))
+		values := make([]float64, len(historicalData.HistData))
+		for i, data := range historicalData.HistData {
+			parsedTime, err := time.Parse("2006-01-02 15:04:05", data.Datetime)
+			if err != nil {
+				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error parsing datetime: %v", err))
+			}
+			times[i] = parsedTime
+			values[i] = data.Value
+		}
+
+		frame.Fields = append(frame.Fields,
+			data.NewField("time", nil, times),
+			data.NewField("values", nil, values),
+		)
+		if qm.IncludeGroupName {
+			frame.Fields = append(frame.Fields, data.NewField("group", nil, []string{qm.Group}))
+		}
+		if qm.IncludeDeviceName {
+			frame.Fields = append(frame.Fields, data.NewField("device", nil, []string{qm.Device}))
+		}
+		if qm.IncludeSensorName {
+			frame.Fields = append(frame.Fields, data.NewField("sensor", nil, []string{qm.Sensor}))
+		}
+	case "Text":
+		switch qm.Property {
+		case "group":
+			groupData, err := d.api.GetGroups()
+			if err != nil {
+				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching group data: %v", err))
+			}
+			filterProperties := extractFilterProperties(groupData.Groups, qm.FilterProperty)
+			frame.Fields = append(frame.Fields,
+				data.NewField("property", nil, []string{qm.Property}),
+				data.NewField("filterProperty", nil, filterProperties),
+			)
+		case "device":
+			deviceData, err := d.api.GetDevices()
+			if err != nil {
+				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching device data: %v", err))
+			}
+			filterProperties := extractFilterProperties(deviceData.Devices, qm.FilterProperty)
+			frame.Fields = append(frame.Fields,
+				data.NewField("property", nil, []string{qm.Property}),
+				data.NewField("filterProperty", nil, filterProperties),
+			)
+		case "sensor":
+			sensorData, err := d.api.GetSensors()
+			if err != nil {
+				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching sensor data: %v", err))
+			}
+			filterProperties := extractFilterProperties(sensorData.Sensors, qm.FilterProperty)
+			frame.Fields = append(frame.Fields,
+				data.NewField("property", nil, []string{qm.Property}),
+				data.NewField("filterProperty", nil, filterProperties),
+			)
+		}
+	case "Raw":
+		switch qm.Property {
+		case "group":
+			groupData, err := d.api.GetGroups()
+			if err != nil {
+				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching group data: %v", err))
+			}
+			filterProperties := extractFilterProperties(groupData.Groups, qm.FilterProperty + "raw")
+			frame.Fields = append(frame.Fields,
+				data.NewField("property", nil, []string{qm.Property + "raw"}),
+				data.NewField("filterProperty", nil, filterProperties),
+			)
+		case "device":
+			deviceData, err := d.api.GetDevices()
+			if err != nil {
+				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching device data: %v", err))
+			}
+			filterProperties := extractFilterProperties(deviceData.Devices, qm.FilterProperty + "raw")
+			frame.Fields = append(frame.Fields,
+				data.NewField("property", nil, []string{qm.Property + "raw"}),
+				data.NewField("filterProperty", nil, filterProperties),
+			)
+		case "sensor":
+			sensorData, err := d.api.GetSensors()
+			if err != nil {
+				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching sensor data: %v", err))
+			}
+			filterProperties := extractFilterProperties(sensorData.Sensors, qm.FilterProperty + "raw")
+			frame.Fields = append(frame.Fields,
+				data.NewField("property", nil, []string{qm.Property + "raw"}),
+				data.NewField("filterProperty", nil, filterProperties),
+			)
+		}
+	}
 
 	// add the frames to the response.
 	response.Frames = append(response.Frames, frame)
@@ -111,7 +199,28 @@ func (d *Datasource) query(_ context.Context, _ backend.PluginContext, query bac
 	return response
 }
 
-
+// extractFilterProperties extracts the filter properties from the given data
+func extractFilterProperties(data interface{}, filterProperty string) []string {
+	var filterProperties []string
+	switch v := data.(type) {
+	case []Group:
+		filterProperties = make([]string, len(v))
+		for i, item := range v {
+			filterProperties[i] = item.Group
+		}
+	case []Device:
+		filterProperties = make([]string, len(v))
+		for i, item := range v {
+			filterProperties[i] = item.Device
+		}
+	case []Sensor:
+		filterProperties = make([]string, len(v))
+		for i, item := range v {
+			filterProperties[i] = item.Sensor
+		}
+	}
+	return filterProperties
+}
 
 /* ########################################## CHECK HEALTH   ############################################ */
 
@@ -141,8 +250,6 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 	}, nil
 }
 
-
-
 /* ########################################## CALL RESOURCE   ############################################ */
 
 func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
@@ -165,7 +272,7 @@ func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResource
 
 func (d *Datasource) handleGetGroups(sender backend.CallResourceResponseSender) error {
 	groups, err := d.api.GetGroups()
-	if err != nil {
+	if (err != nil) {
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
 			Body:   []byte(err.Error()),
@@ -173,7 +280,7 @@ func (d *Datasource) handleGetGroups(sender backend.CallResourceResponseSender) 
 	}
 
 	body, err := json.Marshal(groups)
-	if err != nil {
+	if (err != nil) {
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
 			Body:   []byte(fmt.Sprintf("error marshaling groups: %v", err)),
@@ -191,7 +298,7 @@ func (d *Datasource) handleGetGroups(sender backend.CallResourceResponseSender) 
 
 func (d *Datasource) handleGetDevices(sender backend.CallResourceResponseSender) error {
 	devices, err := d.api.GetDevices()
-	if err != nil {
+	if (err != nil) {
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
 			Body:   []byte(err.Error()),
@@ -199,7 +306,7 @@ func (d *Datasource) handleGetDevices(sender backend.CallResourceResponseSender)
 	}
 
 	body, err := json.Marshal(devices)
-	if err != nil {
+	if (err != nil) {
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
 			Body:   []byte(fmt.Sprintf("error marshaling devices: %v", err)),
@@ -217,7 +324,7 @@ func (d *Datasource) handleGetDevices(sender backend.CallResourceResponseSender)
 
 func (d *Datasource) handleGetSensors(sender backend.CallResourceResponseSender) error {
 	sensors, err := d.api.GetSensors()
-	if err != nil {
+	if (err != nil) {
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
 			Body:   []byte(err.Error()),
@@ -225,7 +332,7 @@ func (d *Datasource) handleGetSensors(sender backend.CallResourceResponseSender)
 	}
 
 	body, err := json.Marshal(sensors)
-	if err != nil {
+	if (err != nil) {
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
 			Body:   []byte(fmt.Sprintf("error marshaling sensors: %v", err)),
@@ -243,7 +350,7 @@ func (d *Datasource) handleGetSensors(sender backend.CallResourceResponseSender)
 
 func (d *Datasource) handleGetChannel(sender backend.CallResourceResponseSender, sensorId string) error {
 	channels, err := d.api.GetChannels(sensorId)
-	if err != nil {
+	if (err != nil) {
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
 			Body:   []byte(err.Error()),
@@ -251,7 +358,7 @@ func (d *Datasource) handleGetChannel(sender backend.CallResourceResponseSender,
 	}
 
 	body, err := json.Marshal(channels)
-	if err != nil {
+	if (err != nil) {
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
 			Body:   []byte(fmt.Sprintf("error marshaling channels: %v", err)),

@@ -16,7 +16,7 @@ type PrtgTableListResponse struct {
 type PrtgGroupListResponse struct {
     PrtgVersion string                    `json:"prtgversion" xml:"prtg-version"`
     TreeSize    int64                     `json:"treesize" xml:"treesize"`
-    GroupList   []PrtgGroupListItemStruct `json:"groups" xml:"groups"`
+    Groups      []PrtgGroupListItemStruct `json:"groups" xml:"groups"`
 }
 
 type PrtgGroupListItemStruct struct {
@@ -56,7 +56,7 @@ type PrtgGroupListItemStruct struct {
 type PrtgDevicesListResponse struct {
     PrtgVersion string         `json:"prtgversion" xml:"prtg-version"`
     TreeSize    int64          `json:"treesize" xml:"treesize"`
-    DeviceList  []PrtgDeviceListItemStruct `json:"devices" xml:"devices"`
+    Devices  []PrtgDeviceListItemStruct `json:"devices" xml:"devices"`
 }
 type PrtgDeviceListItemStruct struct {
     AccessRights   string  `json:"accessrights" xml:"accessrights"`
@@ -99,7 +99,7 @@ type PrtgDeviceListItemStruct struct {
 type PrtgSensorsListResponse struct {
     PrtgVersion string         `json:"prtgversion" xml:"prtg-version"`
     TreeSize    int64          `json:"treesize" xml:"treesize"`
-    SensorList  []PrtgSensorListItemStruct `json:"sensors" xml:"sensors"`
+    Sensors  []PrtgSensorListItemStruct `json:"sensors" xml:"sensors"`
 }
 
 type PrtgSensorListItemStruct struct {
@@ -227,4 +227,43 @@ type PrtgHistoricalDataResponse struct {
 type PrtgValues struct {
     Datetime string  `json:"datetime" xml:"datetime"`
     Value    float64 `json:"value" xml:"value"`
+}
+
+/* ##################################### QUERY MODEL #################################### */
+
+// Datasource struct with baseURL and api
+type Datasource struct {
+	baseURL string
+	api     *Api
+}
+
+// Group represents a PRTG group
+type Group struct {
+	Group string `json:"group"`
+}
+
+// Device represents a PRTG device
+type Device struct {
+	Device string `json:"device"`
+}
+
+// Sensor represents a PRTG sensor
+type Sensor struct {
+	Sensor string `json:"sensor"`
+}
+
+type queryModel struct {
+	QueryType         string `json:"queryType"`
+	Group             string `json:"group"`
+	Device            string `json:"device"`
+	Sensor            string `json:"sensor"`
+	Channel           string `json:"channel"`
+	Property          string `json:"property"`
+	FilterProperty    string `json:"filterProperty"`
+	IncludeGroupName  bool   `json:"includeGroupName"`
+	IncludeDeviceName bool   `json:"includeDeviceName"`
+	IncludeSensorName bool   `json:"includeSensorName"`
+	Groups            []string
+	Devices           []string
+	Sensors           []string
 }

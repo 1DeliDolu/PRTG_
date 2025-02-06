@@ -328,165 +328,167 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     }
   }, [isTextMode]);
 
-
-
-
   return (
     <Stack direction="column" gap={1}>
-      <Stack direction="row" gap={4}>
-        <Stack direction="column" gap={1}>
-          <InlineField label="Query Type"
-            labelWidth={20} grow>
-            <Select options={queryTypeOptions}
-              value={query.queryType}
-              onChange={onQueryTypeChange}
-              width={47} />
-          </InlineField>
+      <Stack direction="column" gap={1}>
+        <InlineField label="Query Type"
+          labelWidth={20} grow>
+          <Select options={queryTypeOptions}
+            value={query.queryType}
+            onChange={onQueryTypeChange}
+            width={47} />
+        </InlineField>
 
-          <InlineField label="Group" labelWidth={20} grow>
-            <Select
-              isLoading={isLoading}
-              options={lists.groups}
-              value={query.group}
-              onChange={onGroupChange}
-              width={47}
-              allowCustomValue
-              isClearable
-              isDisabled={!query.queryType}
-              placeholder="Select Group or type '*'"
-            />
-          </InlineField>
-          <InlineField
-            label="Device"
-            labelWidth={20} grow>
-            <Select
-              isLoading={!lists.devices.length}
-              options={lists.devices}
-              value={query.device}
-              onChange={onDeviceChange}
-              width={47}
-              allowCustomValue
-              placeholder="Select Device or type '*'"
-              isClearable
-              isDisabled={!query.group}
-            />
-          </InlineField>
-        </Stack>
-        <Stack direction="column" gap={1}>
-          <InlineField
-            label="Sensor"
-            labelWidth={20} grow>
-            <Select
-              isLoading={!lists.sensors.length}
-              options={lists.sensors}
-              value={query.sensor}
-              onChange={onSensorChange}
-              width={47}
-              allowCustomValue
-              placeholder="Select Sensor or type '*'"
-              isClearable
-              isDisabled={!query.device}
-            />
-          </InlineField>
+        <InlineField label="Group" labelWidth={20} grow>
+          <Select
+            isLoading={isLoading}
+            options={lists.groups}
+            value={query.group}
+            onChange={onGroupChange}
+            width={47}
+            allowCustomValue
+            isClearable
+            isDisabled={!query.queryType}
+            placeholder="Select Group or type '*'"
+          />
+        </InlineField>
+        <InlineField
+          label="Device"
+          labelWidth={20} grow>
+          <Select
+            isLoading={!lists.devices.length}
+            options={lists.devices}
+            value={query.device}
+            onChange={onDeviceChange}
+            width={47}
+            allowCustomValue
+            placeholder="Select Device or type '*'"
+            isClearable
+            isDisabled={!query.group}
+          />
+        </InlineField>
+      </Stack>
+      <Stack direction="column" gap={1}>
+        <InlineField
+          label="Sensor"
+          labelWidth={20} grow>
+          <Select
+            isLoading={!lists.sensors.length}
+            options={lists.sensors}
+            value={query.sensor}
+            onChange={onSensorChange}
+            width={47}
+            allowCustomValue
+            placeholder="Select Sensor or type '*'"
+            isClearable
+            isDisabled={!query.device}
+          />
+        </InlineField>
 
-          <InlineField
-            label="Channel"
-            labelWidth={20} grow>
-            <Select
-              isLoading={!lists.channels.length}
-              options={lists.channels}
-              value={query.channel}
-              onChange={onChannelChange}
-              width={47}
-              allowCustomValue
-              placeholder="Select Channel or type '*'"
-              isClearable
-              isDisabled={!query.sensor || isRawMode || isTextMode}
-            />
-          </InlineField>
-        </Stack>
+        <InlineField
+          label="Channel"
+          labelWidth={20} grow>
+          <Select
+            isLoading={!lists.channels.length}
+            options={lists.channels}
+            value={query.channel}
+            onChange={onChannelChange}
+            width={47}
+            allowCustomValue
+            placeholder="Select Channel or type '*'"
+            isClearable
+            isDisabled={!query.sensor || isRawMode || isTextMode}
+          />
+        </InlineField>
       </Stack>
 
-      {isMetricsMode && (
-        <FieldSet
-          label="Options">
-          <Stack
-            direction="row"
-            gap={1}>
-            <InlineField
-              label="Include Group"
-              labelWidth={16}>
-              <InlineSwitch
-                value={query.includeGroupName || false}
-                onChange={onIncludeGroupName} />
-            </InlineField>
 
-            <InlineField label="Include Device"
-              labelWidth={15}>
-              <InlineSwitch
-                value={query.includeDeviceName || false}
-                onChange={onIncludeDeviceName} />
-            </InlineField>
+      {
+        isMetricsMode && (
+          <FieldSet
+            label="Options">
+            <Stack
+              direction="row"
+              gap={1}>
+              <InlineField
+                label="Include Group"
+                labelWidth={16}>
+                <InlineSwitch
+                  value={query.includeGroupName || false}
+                  onChange={onIncludeGroupName} />
+              </InlineField>
 
-            <InlineField
-              label="Include Sensor"
-              labelWidth={15}>
-              <InlineSwitch
-                value={query.includeSensorName || false}
-                onChange={onIncludeSensorName} />
-            </InlineField>
-          </Stack>
-        </FieldSet>
-      )}
+              <InlineField label="Include Device"
+                labelWidth={15}>
+                <InlineSwitch
+                  value={query.includeDeviceName || false}
+                  onChange={onIncludeDeviceName} />
+              </InlineField>
 
-      {isTextMode && (
-        <FieldSet label="Options">
-          <Stack direction="row" gap={1}>
-            <InlineField label="Property"
-              labelWidth={16}>
-              <Select
-                options={lists.properties}
-                value={query.property}
-                onChange={onPropertyChange}
-                width={32} />
-            </InlineField>
-            <InlineField
-              label="Filter Property"
-              labelWidth={16}>
-              <Select
-                options={lists.filterProperties}
-                value={query.filterProperty}
-                onChange={onFilterPropertyChange}
-                width={32}
-              />
-            </InlineField>
-          </Stack>
-        </FieldSet>
-      )}
-      {isRawMode && (
-        <FieldSet label="Options">
-          <Stack direction="row" gap={1}>
-            <InlineField label="Property"
-              labelWidth={16}>
-              <Select
-                options={lists.properties}
-                value={query.property}
-                onChange={onPropertyChange}
-                width={32} />
-            </InlineField>
-            <InlineField
-              label="Filter Property"
-              labelWidth={16}>
-              <Select
-                options={lists.filterProperties}
-                value={query.filterProperty}
-                onChange={onFilterPropertyChange}
-                width={32}
-              />
-            </InlineField>
-          </Stack>
-        </FieldSet>
-      )}
-    </Stack>
+              <InlineField
+                label="Include Sensor"
+                labelWidth={15}>
+                <InlineSwitch
+                  value={query.includeSensorName || false}
+                  onChange={onIncludeSensorName} />
+              </InlineField>
+            </Stack>
+          </FieldSet>
+        )
+      }
+
+      {
+        isTextMode && (
+          <FieldSet label="Options">
+            <Stack direction="row" gap={1}>
+              <InlineField label="Property"
+                labelWidth={16}>
+                <Select
+                  options={lists.properties}
+                  value={query.property}
+                  onChange={onPropertyChange}
+                  width={32} />
+              </InlineField>
+              <InlineField
+                label="Filter Property"
+                labelWidth={16}>
+                <Select
+                  options={lists.filterProperties}
+                  value={query.filterProperty}
+                  onChange={onFilterPropertyChange}
+                  width={32}
+                />
+              </InlineField>
+            </Stack>
+          </FieldSet>
+        )
+      }
+      {
+        isRawMode && (
+          <FieldSet label="Options">
+            <Stack direction="row" gap={1}>
+              <InlineField label="Property"
+                labelWidth={16}>
+                <Select
+                  options={lists.properties}
+                  value={query.property}
+                  onChange={onPropertyChange}
+                  width={32} />
+              </InlineField>
+              <InlineField
+                label="Filter Property"
+                labelWidth={16}>
+                <Select
+                  options={lists.filterProperties}
+                  value={query.filterProperty}
+                  onChange={onFilterPropertyChange}
+                  width={32}
+                />
+              </InlineField>
+            </Stack>
+          </FieldSet>
+        )
+      }
+    </Stack >
   )
 }

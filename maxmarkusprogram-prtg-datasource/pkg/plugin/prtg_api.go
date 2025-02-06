@@ -185,26 +185,7 @@ func (a *Api) GetChannels(sensorId string) (*PrtgChannelValueStruct, error) {
 	return &response, nil
 }
 
-// GetValues returns the values of a sensor
-func (a *Api) GetValues(sensorId string) (*PrtgChannelValueStruct, error) {
-	params := map[string]string{
-		"content": "values",
-		"columns": "value_,datetime",
-		"id":      sensorId,
-	}
 
-	body, err := a.baseExecuteRequest("table.json", params)
-	if err != nil {
-		return nil, err
-	}
-
-	var response PrtgChannelValueStruct
-	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	return &response, nil
-}
 
 // GetHistoricalData performs a historical data query for a specific sensor
 func (a *Api) GetHistoricalData(sensorID string, startDate, endDate time.Time) (*PrtgHistoricalDataResponse, error) {
