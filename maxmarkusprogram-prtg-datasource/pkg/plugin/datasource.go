@@ -222,7 +222,7 @@ func extractFilterProperties(data interface{}, filterProperty string) []string {
 	return filterProperties
 }
 
-/* ########################################## CHECK HEALTH   ############################################ */
+/* ########################################## CHECK HEALTH  ############################################ */
 
 // CheckHealth handles health checks sent from Grafana to the plugin.
 // The main use case for these health checks is the test button on the
