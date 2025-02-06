@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/maxmarkusprogram/prtg/pkg/plugin"
 )
 
 // buildApiUrl creates a standardized PRTG API URL

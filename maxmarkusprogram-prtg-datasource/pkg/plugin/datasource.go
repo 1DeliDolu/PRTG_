@@ -12,7 +12,6 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/maxmarkusprogram/prtg/pkg/models"
 	"github.com/maxmarkusprogram/prtg/pkg/plugin"
-
 )
 
 // Make sure Datasource implements required interfaces. This is important to do
