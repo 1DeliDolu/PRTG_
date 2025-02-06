@@ -31,7 +31,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
         if (response && Array.isArray(response.groups)) {
           const groupOptions = response.groups.map(group => ({
             label: group.group,
-            value: group.objid.toString(),
+            value: group.group.toString(),
           }));
           setLists(prev => ({
             ...prev,

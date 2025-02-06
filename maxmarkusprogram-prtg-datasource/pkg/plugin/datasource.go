@@ -11,7 +11,6 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/maxmarkusprogram/prtg/pkg/models"
-	"github.com/maxmarkusprogram/prtg/pkg/plugin"
 )
 
 // Make sure Datasource implements required interfaces. This is important to do
@@ -29,7 +28,7 @@ var (
 // Datasource struct with baseURL and api
 type Datasource struct {
 	baseURL string
-	api     *plugin.Api
+	api     *Api
 }
 
 // NewDatasource creates a new datasource instance.
@@ -51,7 +50,7 @@ func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 
 	return &Datasource{
 		baseURL: baseURL,
-		api:     plugin.NewApi(baseURL, config.Secrets.ApiKey, cacheTime, 10 * time.Second),
+		api: NewApi(baseURL, config.Secrets.ApiKey, cacheTime, 10 * time.Second),
 	}, nil
 }
 

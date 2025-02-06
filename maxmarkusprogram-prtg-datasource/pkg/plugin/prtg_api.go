@@ -1,15 +1,30 @@
 package plugin
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
-
-	"github.com/maxmarkusprogram/prtg/pkg/plugin"
 )
+
+// Api struct to hold API related configurations
+type Api struct {
+	baseURL string
+	apiKey  string
+	timeout time.Duration
+}
+
+// NewApi creates a new Api instance
+func NewApi(baseURL, apiKey string, timeout, requestTimeout time.Duration) *Api {
+	return &Api{
+		baseURL: baseURL,
+		apiKey:  apiKey,
+		timeout: requestTimeout,
+	}
+}
 
 // buildApiUrl creates a standardized PRTG API URL
 func (a *Api) buildApiUrl(method string, params map[string]string) (string, error) {
@@ -46,8 +61,12 @@ func (a *Api) baseExecuteRequest(endpoint string, params map[string]string) ([]b
 		return nil, fmt.Errorf("failed to build URL: %w", err)
 	}
 
+	// Disable TLS verification (for self-signed certificates)
 	client := &http.Client{
 		Timeout: a.timeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ⚠ WARNING: Use only in testing environments
+		},
 	}
 
 	req, err := http.NewRequest("GET", apiUrl, nil)
@@ -75,7 +94,7 @@ func (a *Api) baseExecuteRequest(endpoint string, params map[string]string) ([]b
 }
 
 // Specific API methods using the base request
-func (a *Api) GetSensorStatus(sensorId string) (*PrtgSensorDetailsResponse, error) {
+func (a *Api) GetSensorStatus(sensorId string) (*PrtgStatusListResponse, error) {
 	params := map[string]string{
 		"id":      sensorId,
 		"content": "sensors",
@@ -86,7 +105,7 @@ func (a *Api) GetSensorStatus(sensorId string) (*PrtgSensorDetailsResponse, erro
 		return nil, err
 	}
 
-	var response PrtgSensorDetailsResponse
+	var response PrtgStatusListResponse
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
@@ -126,13 +145,14 @@ func (a *Api) GetStatusList() (*PrtgStatusListResponse, error) {
 func (a *Api) GetGroups() (*PrtgGroupListResponse, error) {
     params := map[string]string{
         "content": "groups",
+        "columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw,active,active_raw,message,message_raw,priority,priority_raw,status,status_raw,tags,tags_raw,datetime,datetime_raw",
     }
 
     body, err := a.baseExecuteRequest("table.json", params)
     if err != nil {
         return nil, err
     }
-fmt.Println(string(body))
+
     var response PrtgGroupListResponse
     if err := json.Unmarshal(body, &response); err != nil {
         return nil, fmt.Errorf("failed to parse response: %w", err)
@@ -168,6 +188,3 @@ func (a *Api) executeListRequest(params map[string]string) (*PrtgDevicesListResp
 	}
 	return &response, nil
 }
-
-
-
