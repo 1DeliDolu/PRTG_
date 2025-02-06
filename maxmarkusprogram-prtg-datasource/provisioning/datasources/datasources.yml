@@ -10,6 +10,6 @@ datasources:
     editable: true
     jsonData:
       path: 'your-prtg-path'
-      cacaheTime: 300
+      cacheTime: 300
     secureJsonData:
       apiKey: 'api-key'
