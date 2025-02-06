@@ -230,7 +230,7 @@ func (a *Api) GetHistoricalData(sensorID string, startDate, endDate time.Time) (
 
 	// Format dates in PRTG format (YYYY-MM-DD-HH-mm-ss)
 	formatDate := func(t time.Time) string {
-		return t.Format("2006-01-02-15-04-05")
+		return t.Format("2025-02-06-15-04-05") // PRTG format yyyy-mm-dd-hh-mm-ss
 	}
 
 	// Prepare parameters
