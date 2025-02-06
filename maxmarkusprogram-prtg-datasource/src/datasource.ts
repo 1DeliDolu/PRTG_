@@ -30,7 +30,8 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
   async getSensors(): Promise<PRTGSensorListResponse> {
     return this.getResource('sensors');
   }
-  async getChannels(): Promise<PRTGChannelListResponse> {
-    return this.getResource('channels');
+
+  async getChannels(sensorId: string): Promise<PRTGChannelListResponse> {
+    return this.getResource('channels', { id: sensorId });
   }
 }

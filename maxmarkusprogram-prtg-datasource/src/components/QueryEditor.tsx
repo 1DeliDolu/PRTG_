@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { InlineField, Select, Stack, FieldSet, InlineSwitch } from '@grafana/ui'
 import { QueryEditorProps, SelectableValue } from '@grafana/data'
 import { DataSource } from '../datasource'
-import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType , propertyList, sensorColumnList, groupColumnList, deviceColumnList} from '../types'
+import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType, propertyList, sensorColumnList, groupColumnList, deviceColumnList } from '../types'
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>
 
@@ -61,10 +61,10 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
       try {
         const response = await datasource.getDevices();
         if (response && Array.isArray(response.devices)) {
-          const filteredDevices = group 
+          const filteredDevices = group
             ? response.devices.filter(device => device.group === group)
             : response.devices;
-          
+
           const deviceOptions = filteredDevices.map(device => ({
             label: device.device,
             value: device.device.toString(),
@@ -90,13 +90,13 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
       try {
         const response = await datasource.getSensors();
         if (response && Array.isArray(response.sensors)) {
-          const filteredSensors = device 
+          const filteredSensors = device
             ? response.sensors.filter(sensor => sensor.device === device)
             : response.sensors;
 
           const sensorOptions = filteredSensors.map(sensor => ({
             label: sensor.sensor,
-            value: sensor.sensor.toString(),
+            value: sensor.objid.toString(),
           }));
           setLists(prev => ({
             ...prev,
@@ -113,9 +113,36 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     fetchSensors();
   }, [datasource, device]);
 
+  useEffect(() => {
+    async function fetchChannels() {
+      setIsLoading(true);
+      try {
+        const response = await datasource.getChannels(query.sensor);
+        if (response && Array.isArray(response.channels)) {
+          const channelOptions = response.channels.map(channel => ({
+            label: channel.channel.toString(), // Ensure label is a string
+            value: channel.channel.toString(),
+          }));
+          setLists(prev => ({
+            ...prev,
+            channels: channelOptions,
+          }));
+        } else {
+          console.error('Invalid response format:', response);
+        }
+      } catch (error) {
+        console.error('Error fetching channels:', error);
+      }
+      setIsLoading(false);
+    }
+    if (query.sensor) {
+      fetchChannels();
+    }
+  }, [datasource, query.sensor]);
+
   const onQueryTypeChange = (value: SelectableValue<QueryType>) => {
-    onChange({ 
-      ...query, 
+    onChange({
+      ...query,
       queryType: value.value!,
       group: '',
       device: '',
@@ -131,8 +158,8 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
 
   // Add other onChange handlers for Select components
   const onGroupChange = (value: SelectableValue<string>) => {
-    onChange({ 
-      ...query, 
+    onChange({
+      ...query,
       group: value.value!,
       device: '',
       sensor: '',
@@ -146,8 +173,8 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
   }
 
   const onDeviceChange = (value: SelectableValue<string>) => {
-    onChange({ 
-      ...query, 
+    onChange({
+      ...query,
       device: value.value!,
       sensor: '',
       channel: ''
@@ -159,9 +186,9 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
   }
 
   const onSensorChange = (value: SelectableValue<string>) => {
-    onChange({ 
-      ...query, 
-      sensor: value.value!,
+    onChange({
+      ...query,
+      sensor: value.objid!,
       channel: ''
     })
     setSensor(value.value!)
@@ -229,14 +256,13 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
           }));
           break;
         case 'device':
-        case 'device':
           const deviceFilterOptions: Array<SelectableValue<string>> = deviceColumnList.map(item => ({
             label: item.visible_name,
             value: item.name + 'raw',
           }));
           setLists(prev => ({
             ...prev,
-            properties: propertyOptions,  
+            properties: propertyOptions,
             filterProperties: deviceFilterOptions,
           }));
           break;
@@ -281,14 +307,13 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
           }));
           break;
         case 'device':
-        case 'device':
           const deviceFilterOptions: Array<SelectableValue<string>> = deviceColumnList.map(item => ({
             label: item.visible_name,
             value: item.name,
           }));
           setLists(prev => ({
             ...prev,
-            properties: propertyOptions,  
+            properties: propertyOptions,
             filterProperties: deviceFilterOptions,
           }));
           break;
@@ -303,7 +328,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     }
   }, [isTextMode]);
 
- 
+
 
 
   return (
@@ -318,7 +343,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
               width={47} />
           </InlineField>
 
-            <InlineField label="Group" labelWidth={20} grow>
+          <InlineField label="Group" labelWidth={20} grow>
             <Select
               isLoading={isLoading}
               options={lists.groups}
@@ -330,8 +355,8 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
               isDisabled={!query.queryType}
               placeholder="Select Group or type '*'"
             />
-            </InlineField>
-            <InlineField
+          </InlineField>
+          <InlineField
             label="Device"
             labelWidth={20} grow>
             <Select
@@ -345,7 +370,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
               isClearable
               isDisabled={!query.group}
             />
-            </InlineField>
+          </InlineField>
         </Stack>
         <Stack direction="column" gap={1}>
           <InlineField
@@ -364,7 +389,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
             />
           </InlineField>
 
-            <InlineField
+          <InlineField
             label="Channel"
             labelWidth={20} grow>
             <Select
@@ -378,7 +403,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
               isClearable
               isDisabled={!query.sensor || isRawMode || isTextMode}
             />
-            </InlineField>
+          </InlineField>
         </Stack>
       </Stack>
 

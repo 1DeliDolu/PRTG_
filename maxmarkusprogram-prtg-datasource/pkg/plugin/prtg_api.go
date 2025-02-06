@@ -65,7 +65,7 @@ func (a *Api) baseExecuteRequest(endpoint string, params map[string]string) ([]b
 	client := &http.Client{
 		Timeout: a.timeout,
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, 
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
 	}
 
@@ -93,7 +93,6 @@ func (a *Api) baseExecuteRequest(endpoint string, params map[string]string) ([]b
 	return io.ReadAll(resp.Body)
 }
 
-
 func (a *Api) GetStatusList() (*PrtgStatusListResponse, error) {
 	body, err := a.baseExecuteRequest("status.json", nil)
 	if err != nil {
@@ -110,31 +109,27 @@ func (a *Api) GetStatusList() (*PrtgStatusListResponse, error) {
 func (a *Api) GetGroups() (*PrtgGroupListResponse, error) {
 	params := map[string]string{
 		"content": "groups",
-		"columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw,active,active_raw,message,message_raw,priority,priority_raw,status,status_raw,tags,tags_raw,datetime,datetime_raw,upsens,upsens_raw,downsens,downsens_raw,warnsens,warnsens_raw,pausedsens,pausedsens_raw,unusualsens,unusualsens_raw,totalsens,totalsens_raw,accessrights,accessrights_raw",
+		"columns": "objid,group,device,sensor,channel,active,message,priority,status,tags,datetime,upsens,downsens,warnsens,pausedsens,unusualsens,totalsens,accessrights",
 	}
 
-    body, err := a.baseExecuteRequest("table.json", params)
-    if err != nil {
-        return nil, err
-    }
+	body, err := a.baseExecuteRequest("table.json", params)
+	if err != nil {
+		return nil, err
+	}
 
-    var response PrtgGroupListResponse
-    if err := json.Unmarshal(body, &response); err != nil {
-        return nil, fmt.Errorf("failed to parse response: %w", err)
-    }
+	var response PrtgGroupListResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
 
-    return &response, nil
+	return &response, nil
 }
 
 func (a *Api) GetDevices() (*PrtgDevicesListResponse, error) {
 	params := map[string]string{
 		"content": "devices",
-		"columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw," +
-			"active,active_raw,message,message_raw,priority,priority_raw,status,status_raw," +
-			"tags,tags_raw,datetime,datetime_raw,deviceicon,deviceicon_raw,location,location_raw," +
-			"upsens,upsens_raw,downsens,downsens_raw,warnsens,warnsens_raw," +
-			"pausedsens,pausedsens_raw,unusualsens,unusualsens_raw,totalsens,totalsens_raw," +
-			"accessrights,accessrights_raw",
+		"columns": "objid,group,device,sensor,channel,active,message,priority,status," +
+			"tags,datetime,deviceicon,location,upsens,downsens,warnsens,pausedsens,unusualsens,totalsens,accessrights",
 	}
 
 	body, err := a.baseExecuteRequest("table.json", params)
@@ -153,14 +148,7 @@ func (a *Api) GetDevices() (*PrtgDevicesListResponse, error) {
 func (a *Api) GetSensors() (*PrtgSensorsListResponse, error) {
 	params := map[string]string{
 		"content": "sensors",
-		"columns": "objid,objid_raw,group,group_raw,device,device_raw,sensor,sensor_raw,channel,channel_raw," +
-			"active,active_raw,status,status_raw,message,message_raw,priority,priority_raw," +
-			"tags,tags_raw,datetime,datetime_raw,lastcheck,lastcheck_raw,lastup,lastup_raw,lastdown,lastdown_raw," +
-			"interval,interval_raw,uptime,uptime_raw,uptimetime,uptimetime_raw,uptimesince,uptimesince_raw," +
-			"downtime,downtime_raw,downtimetime,downtimetime_raw,downtimesince,downtimesince_raw," +
-			"upsens,upsens_raw,downsens,downsens_raw,warnsens,warnsens_raw," +
-			"pausedsens,pausedsens_raw,unusualsens,unusualsens_raw,totalsens,totalsens_raw," +
-			"accessrights,accessrights_raw,parentid,parentid_raw",
+		"columns": "objid,group,device,sensor,channel,active,status,message,priority,tags,datetime,lastcheck,lastup,lastdown,interval,uptime,uptimetime,uptimesince,downtime,downtimetime,downtimesince,upsens,downsens,warnsens,pausedsens,unusualsens,totalsens,accessrights,parentid",
 	}
 
 	body, err := a.baseExecuteRequest("table.json", params)
@@ -176,5 +164,44 @@ func (a *Api) GetSensors() (*PrtgSensorsListResponse, error) {
 	return &response, nil
 }
 
+func (a *Api) GetChanelValues(sensorId string) (*PrtgChannelValueStruct, error) {
+	params := map[string]string{
+		"content":    "values",
+		"columns":    "value_,datetime",
+		"usecaption": "true",
+		"count":      "1",
+		"id":         sensorId,
+	}
 
+	body, err := a.baseExecuteRequest("table.json", params)
+	if err != nil {
+		return nil, err
+	}
 
+	var response PrtgChannelValueStruct
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+func (a *Api) GetChannels(sensorId string) (*PrtgChannelValueStruct, error) {
+	params := map[string]string{
+		"content": "channels",
+		"columns": "objid,channel",
+		"id":      sensorId,
+	}
+
+	body, err := a.baseExecuteRequest("table.json", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var response PrtgChannelValueStruct
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}

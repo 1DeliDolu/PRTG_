@@ -190,6 +190,15 @@ type PrtgStatusListResponse struct {
     Version              string `json:"version" xml:"version"`
     WarnSens             string `json:"warnsens" xml:"warnsens"`
 }
+// channel list  PrtgChannelsListResponse
+type PrtgChannelsListResponse struct {
+    DatetimeRAW float64                `json:"datetime_raw" xml:"datetime_raw"`
+    ValueRAW    PrtgChannelValueStruct `json:"value_raw" xml:"value_raw"`
+    StatusRAW   int                    `json:"status_raw,omitempty" xml:"status_raw,omitempty"`
+}
 
-
+type PrtgChannelValueStruct struct {
+    Text    string `json:"text" xml:"text"`
+    Channel string `json:"channel,omitempty" xml:"channel,omitempty"`
+}
 

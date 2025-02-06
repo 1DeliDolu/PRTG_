@@ -41,7 +41,7 @@ func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 	baseURL := fmt.Sprintf("https://%s/api/table.json?apitoken=%s&content=groups&columns=group", config.Path, config.Secrets.ApiKey)
 
 	fmt.Println("baseURL: ", baseURL)
-	
+
 	// Default cache time if not set
 	cacheTime := config.CacheTime
 	if cacheTime <= 0 {
@@ -50,7 +50,7 @@ func NewDatasource(_ context.Context, settings backend.DataSourceInstanceSetting
 
 	return &Datasource{
 		baseURL: baseURL,
-		api: NewApi(baseURL, config.Secrets.ApiKey, cacheTime, 10 * time.Second),
+		api:     NewApi(baseURL, config.Secrets.ApiKey, cacheTime, 10*time.Second),
 	}, nil
 }
 
@@ -141,11 +141,14 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
 	switch req.Path {
 	case "groups":
-		return d.handleGetGroups(ctx, sender)
+		return d.handleGetGroups(sender)
 	case "devices":
-		return d.handleGetDevices(ctx, sender)
+		return d.handleGetDevices(sender)
 	case "sensors":
-		return d.handleGetSensors(ctx, sender)
+		return d.handleGetSensors(sender)
+	case "channels":
+		objid := req.URL
+		return d.handleGetChannel(sender, objid)
 	default:
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusNotFound,
@@ -153,7 +156,7 @@ func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResource
 	}
 }
 
-func (d *Datasource) handleGetGroups(ctx context.Context, sender backend.CallResourceResponseSender) error {
+func (d *Datasource) handleGetGroups(sender backend.CallResourceResponseSender) error {
 	groups, err := d.api.GetGroups()
 	if err != nil {
 		return sender.Send(&backend.CallResourceResponse{
@@ -179,7 +182,7 @@ func (d *Datasource) handleGetGroups(ctx context.Context, sender backend.CallRes
 	})
 }
 
-func (d *Datasource) handleGetDevices(ctx context.Context, sender backend.CallResourceResponseSender) error {
+func (d *Datasource) handleGetDevices(sender backend.CallResourceResponseSender) error {
 	devices, err := d.api.GetDevices()
 	if err != nil {
 		return sender.Send(&backend.CallResourceResponse{
@@ -205,7 +208,7 @@ func (d *Datasource) handleGetDevices(ctx context.Context, sender backend.CallRe
 	})
 }
 
-func (d *Datasource) handleGetSensors(ctx context.Context, sender backend.CallResourceResponseSender) error {
+func (d *Datasource) handleGetSensors(sender backend.CallResourceResponseSender) error {
 	sensors, err := d.api.GetSensors()
 	if err != nil {
 		return sender.Send(&backend.CallResourceResponse{
@@ -231,4 +234,28 @@ func (d *Datasource) handleGetSensors(ctx context.Context, sender backend.CallRe
 	})
 }
 
+func (d *Datasource) handleGetChannel(sender backend.CallResourceResponseSender, sensorId string) error {
+	channels, err := d.api.GetChannels(sensorId)
+	if err != nil {
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusInternalServerError,
+			Body:   []byte(err.Error()),
+		})
+	}
 
+	body, err := json.Marshal(channels)
+	if err != nil {
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusInternalServerError,
+			Body:   []byte(fmt.Sprintf("error marshaling channels: %v", err)),
+		})
+	}
+
+	return sender.Send(&backend.CallResourceResponse{
+		Status: http.StatusOK,
+		Headers: map[string][]string{
+			"Content-Type": {"application/json"},
+		},
+		Body: body,
+	})
+}
