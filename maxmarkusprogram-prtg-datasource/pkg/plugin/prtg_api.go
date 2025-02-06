@@ -93,41 +93,6 @@ func (a *Api) baseExecuteRequest(endpoint string, params map[string]string) ([]b
 	return io.ReadAll(resp.Body)
 }
 
-// Specific API methods using the base request
-func (a *Api) GetSensorStatus(sensorId string) (*PrtgStatusListResponse, error) {
-	params := map[string]string{
-		"id":      sensorId,
-		"content": "sensors",
-	}
-
-	body, err := a.baseExecuteRequest("table.json", params)
-	if err != nil {
-		return nil, err
-	}
-
-	var response PrtgStatusListResponse
-	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-	return &response, nil
-}
-
-func (a *Api) GetTableList() (*PrtgTableListResponse, error) {
-	params := map[string]string{
-		"content": "groups,devices,sensors",
-	}
-
-	body, err := a.baseExecuteRequest("table.json", params)
-	if err != nil {
-		return nil, err
-	}
-
-	var response PrtgTableListResponse
-	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-	return &response, nil
-}
 
 func (a *Api) GetStatusList() (*PrtgStatusListResponse, error) {
 	body, err := a.baseExecuteRequest("status.json", nil)
