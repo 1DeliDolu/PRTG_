@@ -200,7 +200,7 @@ func (d *Datasource) query(_ context.Context, _ backend.PluginContext, query bac
 }
 
 // extractFilterProperties extracts the filter properties from the given data
-func extractFilterProperties(data interface{}, filterProperty string) []string {
+func extractFilterProperties(data interface{}, _ string) []string {
 	var filterProperties []string
 	switch v := data.(type) {
 	case []Group:
