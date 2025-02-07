@@ -90,7 +90,15 @@ func (a *Api) baseExecuteRequest(endpoint string, params map[string]string) ([]b
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
-	return io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Log the raw response body for debugging
+	fmt.Printf("Raw response body: %s\n", string(body))
+
+	return body, nil
 }
 
 func (a *Api) GetStatusList() (*PrtgStatusListResponse, error) {
@@ -109,7 +117,8 @@ func (a *Api) GetStatusList() (*PrtgStatusListResponse, error) {
 func (a *Api) GetGroups() (*PrtgGroupListResponse, error) {
 	params := map[string]string{
 		"content": "groups",
-		"columns": "objid,group,device,sensor,channel,active,message,priority,status,tags,datetime,upsens,downsens,warnsens,pausedsens,unusualsens,totalsens,accessrights",
+		"columns": "active,channel,datetime,device,group,message,objid,priority,sensor,status,tags",
+		"count":   "50000",
 	}
 
 	body, err := a.baseExecuteRequest("table.json", params)
@@ -128,7 +137,8 @@ func (a *Api) GetGroups() (*PrtgGroupListResponse, error) {
 func (a *Api) GetDevices() (*PrtgDevicesListResponse, error) {
 	params := map[string]string{
 		"content": "devices",
-		"columns": "accessrights,active,channel,datetime,device,deviceicon,downsens,group,location,message,objid,pausedsens,priority,sensor,status,tags,totalsens,unusualsens,upsens,warnsens",
+		"columns": "active,channel,datetime,device,group,message,objid,priority,sensor,status,tags",
+		"count":   "50000",
 	}
 
 	body, err := a.baseExecuteRequest("table.json", params)
@@ -147,7 +157,8 @@ func (a *Api) GetDevices() (*PrtgDevicesListResponse, error) {
 func (a *Api) GetSensors() (*PrtgSensorsListResponse, error) {
 	params := map[string]string{
 		"content": "sensors",
-		"columns": "objid,group,device,sensor,channel,active,status,message,priority,tags,datetime,lastcheck,lastup,lastdown,interval,uptime,uptimetime,uptimesince,downtime,downtimetime,downtimesince,upsens,downsens,warnsens,pausedsens,unusualsens,totalsens,accessrights,parentid",
+		"columns": "active,channel,datetime,device,group,message,objid,priority,sensor,status,tags",
+		"count":   "50000",
 	}
 
 	body, err := a.baseExecuteRequest("table.json", params)
@@ -156,6 +167,7 @@ func (a *Api) GetSensors() (*PrtgSensorsListResponse, error) {
 	}
 
 	var response PrtgSensorsListResponse
+	fmt.Printf("Sensor Response: %s\n", string(body)) // Add this line to print raw response
 	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
@@ -163,16 +175,16 @@ func (a *Api) GetSensors() (*PrtgSensorsListResponse, error) {
 	return &response, nil
 }
 
-func (a *Api) GetChannels(sensorId string) (*PrtgChannelValueStruct, error) {
+func (a *Api) GetChannels(objid string) (*PrtgChannelValueStruct, error) {
 	params := map[string]string{
 		"content":    "values",
+		"id":         objid,
 		"columns":    "value_,datetime",
 		"usecaption": "true",
-		"count":      "1",
-		"id":         sensorId,
+		"count":      "50000",
 	}
 
-	body, err := a.baseExecuteRequest("table.json", params)
+	body, err := a.baseExecuteRequest("historicdata.json", params)
 	if err != nil {
 		return nil, err
 	}
@@ -184,8 +196,6 @@ func (a *Api) GetChannels(sensorId string) (*PrtgChannelValueStruct, error) {
 
 	return &response, nil
 }
-
-
 
 // GetHistoricalData performs a historical data query for a specific sensor
 func (a *Api) GetHistoricalData(sensorID string, startDate, endDate time.Time) (*PrtgHistoricalDataResponse, error) {
@@ -231,13 +241,13 @@ func (a *Api) GetHistoricalData(sensorID string, startDate, endDate time.Time) (
 	}
 
 	var response PrtgHistoricalDataResponse
-		if err := json.Unmarshal(body, &response); err != nil {
-			return nil, fmt.Errorf("failed to parse historical data response: %w", err)
-		}
-	
-		if len(response.HistData) == 0 {
-			return nil, fmt.Errorf("no historical data received from PRTG")
-		}
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse historical data response: %w", err)
+	}
+
+	if len(response.HistData) == 0 {
+		return nil, fmt.Errorf("no historical data received from PRTG")
+	}
 
 	return &response, nil
 }

@@ -3,10 +3,6 @@
   "rules": {
     "react/prop-types": "off"
   },
-  "eslint.validate": [
-    "typescript",
-    "typescriptreact"
-  ],
   "eslint.workingDirectories": [
     {
       "mode": "auto"

@@ -46,6 +46,8 @@ export interface MySecureJsonData {
   apiKey?: string;
 }
 
+
+/* ################################### QUERY TYPE OPTION ###################################### */
 export interface QueryTypeOptions {
   label: string;
   value: QueryType;
@@ -61,30 +63,31 @@ export interface ListItem {
   visible_name: string;
 }
 
-
+/* ################################### PRTG ITEMS ###################################### */
 export interface PRTGItem {
-  objid: number;
-  objid_raw: number;
-  group: string;
-  group_raw: string;
-  device: string;
-  device_raw: string;
-  sensor: string;
-  sensor_raw: string;
-  channel: string;
-  channel_raw: string;
   active: boolean;
   active_raw: number;
+  channel: string;
+  channel_raw: string;
+  datetime: string;
+  datetime_raw: number;
+  device: string;
+  device_raw: string;
+  group: string;
+  group_raw: string;
   message: string;
   message_raw: string;
+  objid: number;
+  objid_raw: number;
   priority: string;
   priority_raw: number;
+  sensor: string;
+  sensor_raw: string;
   status: string;
   status_raw: number;
   tags: string;
   tags_raw: string;
-  datetime: string;
-  datetime_raw: number;
+  
 }
 
 export interface PRTGGroupListResponse {
@@ -124,7 +127,7 @@ export interface PRTGChannelListResponse {
 }
 
 export interface PRTGItemChannel {
- value: string;
+  value: string;
   datetime: string;
 
   [key: string]: string | number; 
@@ -159,69 +162,6 @@ export interface PropertyOption {
 }
 
 
-//##################################################################################################
-export type SensorColumnItem = typeof sensorColumnList[number];
-export type GroupColumnItem = typeof groupColumnList[number];
-export type DeviceColumnItem = typeof deviceColumnList[number];
 
-export interface ColumnOption {
-  label: string;
-  value: string;
-}
 
-export const sensorColumnList = [
-  { name: 'accessrights', visible_name: 'Access Rights' },
-  { name: 'active', visible_name: 'Active' },
-  { name: 'downtime', visible_name: 'Downtime Percentage' },
-  { name: 'downtimesince', visible_name: 'Elapsed Time Since Last Up' },
-  { name: 'downtimetime', visible_name: 'Downtime Duration' },
-  { name: 'downsens', visible_name: 'Down Sensors Count' },
-  { name: 'interval', visible_name: 'Effective Interval' },
-  { name: 'lastcheck', visible_name: 'Last Check Time' },
-  { name: 'lastdown', visible_name: 'Last Down Time' },
-  { name: 'lastup', visible_name: 'Last Up Time' },
-  { name: 'message', visible_name: 'Detailed Message' },
-  { name: 'pausedsens', visible_name: 'Paused Sensors Count' },
-  { name: 'priority', visible_name: 'Priority' },
-  { name: 'status', visible_name: 'Status' },
-  { name: 'tags', visible_name: 'Tags' },
-  { name: 'totalsens', visible_name: 'Total Sensors Count' },
-  { name: 'unusualsens', visible_name: 'Unusual Sensors Count' },
-  { name: 'uptime', visible_name: 'Uptime Percentage' },
-  { name: 'uptimesince', visible_name: 'Elapsed Time Since Last Down' },
-  { name: 'uptimetime', visible_name: 'Uptime Duration' },
-  { name: 'upsens', visible_name: 'Up Sensors Count' },
-  { name: 'warnsens', visible_name: 'Warning Sensors Count' },
-] as const;
 
-export const groupColumnList = [
-  { name: 'accessrights', visible_name: 'Access Rights' },
-  { name: 'active', visible_name: 'Active' },
-  { name: 'downsens', visible_name: 'Down Sensors Count' },
-  { name: 'message', visible_name: 'Detailed Message' },
-  { name: 'pausedsens', visible_name: 'Paused Sensors Count' },
-  { name: 'priority', visible_name: 'Priority' },
-  { name: 'status', visible_name: 'Status' },
-  { name: 'tags', visible_name: 'Tags' },
-  { name: 'totalsens', visible_name: 'Total Sensors Count' },
-  { name: 'unusualsens', visible_name: 'Unusual Sensors Count' },
-  { name: 'upsens', visible_name: 'Up Sensors Count' },
-  { name: 'warnsens', visible_name: 'Warning Sensors Count' },
-] as const;
-
-export const deviceColumnList = [
-  { name: 'accessrights', visible_name: 'Access Rights' },
-  { name: 'active', visible_name: 'Active' },
-  { name: 'deviceicon', visible_name: 'Device Icon' },
-  { name: 'downsens', visible_name: 'Down Sensors Count' },
-  { name: 'location', visible_name: 'Location' },
-  { name: 'message', visible_name: 'Detailed Message' },
-  { name: 'pausedsens', visible_name: 'Paused Sensors Count' },
-  { name: 'priority', visible_name: 'Priority' },
-  { name: 'status', visible_name: 'Status' },
-  { name: 'tags', visible_name: 'Tags' },
-  { name: 'totalsens', visible_name: 'Total Sensors Count' },
-  { name: 'unusualsens', visible_name: 'Unusual Sensors Count' },
-  { name: 'upsens', visible_name: 'Up Sensors Count' },
-  { name: 'warnsens', visible_name: 'Warning Sensors Count' }
-] as const;

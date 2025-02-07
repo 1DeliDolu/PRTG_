@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { InlineField, Select, Stack, FieldSet, InlineSwitch } from '@grafana/ui'
 import { QueryEditorProps, SelectableValue } from '@grafana/data'
 import { DataSource } from '../datasource'
-import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType, propertyList, sensorColumnList, groupColumnList, deviceColumnList } from '../types'
+import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType, propertyList,  filterPropertyList } from '../types'
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>
 
@@ -14,8 +14,11 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
 
   const [group, setGroup] = useState<string>('')
   const [device, setDevice] = useState<string>('')
+  //@ts-ignore
   const [sensor, setSensor] = useState<string>('')
+  //@ts-ignore
   const [channel, setChannel] = useState<string>('')
+  const [objid, setObjid] = useState<string>('')
 
 
   const [lists, setLists] = useState({
@@ -29,7 +32,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
   });
 
   const [isLoading, setIsLoading] = useState(false);
-
+  /* ############################################## FETCH GROUPS ####################################### */
   useEffect(() => {
     async function fetchGroups() {
       setIsLoading(true);
@@ -55,6 +58,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     fetchGroups();
   }, [datasource]);
 
+  /* ########################################### FETCH DEVICES ####################################### */
   useEffect(() => {
     async function fetchDevices() {
       setIsLoading(true);
@@ -84,6 +88,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     fetchDevices();
   }, [datasource, group]);
 
+  /* ######################################## FETCH SENSOR ############################################### */
   useEffect(() => {
     async function fetchSensors() {
       setIsLoading(true);
@@ -93,10 +98,10 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
           const filteredSensors = device
             ? response.sensors.filter(sensor => sensor.device === device)
             : response.sensors;
-
+          console.log('filteredSensors', filteredSensors);
           const sensorOptions = filteredSensors.map(sensor => ({
             label: sensor.sensor,
-            value: sensor.objid.toString(),
+            value: sensor.sensor.toString(),
           }));
           setLists(prev => ({
             ...prev,
@@ -113,12 +118,27 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     fetchSensors();
   }, [datasource, device]);
 
+  /* ######################################## FETCH CHANNEL ############################################### */
   useEffect(() => {
     async function fetchChannels() {
       setIsLoading(true);
       try {
-        const response = await datasource.getChannels(query.sensor);
-        if (response && Array.isArray(response.channels)) {
+        console.log('objid =', objid);
+        const response = await datasource.getChannels(objid);
+        console.log('response', response);
+
+        // Check if response is JSON
+        if (!response || typeof response !== 'object') {
+          console.error("Invalid JSON response", response);
+          return;
+        }
+
+        if ('error' in response) {
+          console.error("API Error:", response.error);
+          return;
+        }
+
+        if (Array.isArray(response.channels)) {
           const channelOptions = response.channels.map(channel => ({
             label: channel.channel.toString(), // Ensure label is a string
             value: channel.channel.toString(),
@@ -135,19 +155,60 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
       }
       setIsLoading(false);
     }
-    if (query.sensor) {
+
+    if (objid) {
       fetchChannels();
     }
-  }, [datasource, query.sensor]);
+  }, [datasource, objid]);
+
+  useEffect(() => {
+    if (isRawMode) {
+      const propertyOptions: Array<SelectableValue<string>> = propertyList.map(item => ({
+        label: item.visible_name,
+        value: item.name + 'raw',
+      }));
+
+      const filterPropertyOptions: Array<SelectableValue<string>> = filterPropertyList.map(item => ({
+        label: item.visible_name,
+        value: item.name + 'raw',
+      }));
+
+      setLists(prev => ({
+        ...prev,
+        properties: propertyOptions,
+        filterProperties: filterPropertyOptions,
+      }));
+    }
+  }, [isRawMode]);
+
+  useEffect(() => {
+    if (isTextMode) {
+      const propertyOptions: Array<SelectableValue<string>> = propertyList.map(item => ({
+        label: item.visible_name,
+        value: item.name,
+      }));
+
+      const filterPropertyOptions: Array<SelectableValue<string>> = filterPropertyList.map(item => ({
+        label: item.visible_name,
+        value: item.name,
+      }));
+
+      setLists(prev => ({
+        ...prev,
+        properties: propertyOptions,
+        filterProperties: filterPropertyOptions,
+      }));
+    }
+  }, [isTextMode]);
+
+
+  /* ######################################## QUERY  ############################################### */
 
   const onQueryTypeChange = (value: SelectableValue<QueryType>) => {
     onChange({
       ...query,
       queryType: value.value!,
-      group: '',
-      device: '',
-      sensor: '',
-      channel: ''
+     
     })
     setGroup('')
     setDevice('')
@@ -161,14 +222,9 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     onChange({
       ...query,
       group: value.value!,
-      device: '',
-      sensor: '',
-      channel: ''
+    
     })
     setGroup(value.value!)
-    setDevice('')
-    setSensor('')
-    setChannel('')
     onRunQuery()
   }
 
@@ -176,24 +232,46 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     onChange({
       ...query,
       device: value.value!,
-      sensor: '',
-      channel: ''
+
     })
-    setDevice(value.value!)
-    setSensor('')
-    setChannel('')
+    console.log('device', value.value!),
+      setDevice(value.value!)
     onRunQuery()
   }
 
-  const onSensorChange = (value: SelectableValue<string>) => {
+  const findSensorObjid = async (sensorName: string) => {
+    try {
+      const response = await datasource.getSensors();
+      if (response && Array.isArray(response.sensors)) {
+        const sensor = response.sensors.find(s => s.sensor === sensorName);
+        console.log('sensor Query', sensor);
+        if (sensor) {
+          setObjid(sensor.objid.toString());
+          console.log('objid', sensor.objid.toString());
+          return sensor.objid.toString();
+        } else {
+          console.error('Sensor not found:', sensorName);
+        }
+      } else {
+        console.error('Invalid response format:', response);
+      }
+    } catch (error) {
+      console.error('Error fetching sensors:', error);
+    }
+    return '';
+  };
+
+  const onSensorChange = async (value: SelectableValue<string>) => {
     onChange({
       ...query,
-      sensor: value.objid!,
+      sensor: value.value!,
       channel: ''
-    })
-    setSensor(value.value!)
-    setChannel('')
-    onRunQuery()
+    });
+    console.log('sensor', value.value!);
+    setSensor(value.value!);
+    await findSensorObjid(value.value!);
+    setChannel('');
+    onRunQuery();
   }
 
   const onChannelChange = (value: SelectableValue<string>) => {
@@ -226,107 +304,6 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     onRunQuery()
   }
 
-  useEffect(() => {
-    if (isRawMode) {
-      const propertyOptions: Array<SelectableValue<string>> = propertyList.map(item => ({
-        label: item.visible_name,
-        value: item.name + 'raw',
-      }));
-      switch (query.property) {
-        case 'sensor':
-          const filterPropertyOptions: Array<SelectableValue<string>> = sensorColumnList.map(item => ({
-            label: item.visible_name,
-            value: item.name + 'raw',
-          }));
-          setLists(prev => ({
-            ...prev,
-            properties: propertyOptions,
-            filterProperties: filterPropertyOptions,
-          }));
-          break;
-        case 'group':
-          const groupFilterOptions: Array<SelectableValue<string>> = groupColumnList.map(item => ({
-            label: item.visible_name,
-            value: item.name + 'raw',
-          }));
-          setLists(prev => ({
-            ...prev,
-            properties: propertyOptions,
-            filterProperties: groupFilterOptions,
-          }));
-          break;
-        case 'device':
-          const deviceFilterOptions: Array<SelectableValue<string>> = deviceColumnList.map(item => ({
-            label: item.visible_name,
-            value: item.name + 'raw',
-          }));
-          setLists(prev => ({
-            ...prev,
-            properties: propertyOptions,
-            filterProperties: deviceFilterOptions,
-          }));
-          break;
-        default:
-          setLists(prev => ({
-            ...prev,
-            properties: propertyOptions,
-            filterProperties: [],
-          }));
-          break;
-      }
-    }
-  }, [isRawMode]);
-
-  useEffect(() => {
-    if (isTextMode) {
-      const propertyOptions: Array<SelectableValue<string>> = propertyList.map(item => ({
-        label: item.visible_name,
-        value: item.name,
-      }));
-      switch (query.property) {
-        case 'sensor':
-          const filterPropertyOptions: Array<SelectableValue<string>> = sensorColumnList.map(item => ({
-            label: item.visible_name,
-            value: item.name,
-          }));
-          setLists(prev => ({
-            ...prev,
-            properties: propertyOptions,
-            filterProperties: filterPropertyOptions,
-          }));
-          break;
-        case 'group':
-          const groupFilterOptions: Array<SelectableValue<string>> = groupColumnList.map(item => ({
-            label: item.visible_name,
-            value: item.name,
-          }));
-          setLists(prev => ({
-            ...prev,
-            properties: propertyOptions,
-            filterProperties: groupFilterOptions,
-          }));
-          break;
-        case 'device':
-          const deviceFilterOptions: Array<SelectableValue<string>> = deviceColumnList.map(item => ({
-            label: item.visible_name,
-            value: item.name,
-          }));
-          setLists(prev => ({
-            ...prev,
-            properties: propertyOptions,
-            filterProperties: deviceFilterOptions,
-          }));
-          break;
-        default:
-          setLists(prev => ({
-            ...prev,
-            properties: propertyOptions,
-            filterProperties: [],
-          }));
-          break;
-      }
-    }
-  }, [isTextMode]);
 
   return (
     <Stack direction="column" gap={1}>
@@ -397,7 +374,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
             allowCustomValue
             placeholder="Select Channel or type '*'"
             isClearable
-            isDisabled={!query.sensor || isRawMode || isTextMode}
+            isDisabled={!query.sensor}
           />
         </InlineField>
       </Stack>
