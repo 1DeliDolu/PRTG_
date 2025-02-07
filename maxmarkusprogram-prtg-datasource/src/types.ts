@@ -11,7 +11,7 @@ export interface MyQuery extends DataQuery {
   group: string;
   device: string;
   sensor: string;
-  obid: number;
+  objid: number;
   channel: string;
   queryType: QueryType;
   property: string;
