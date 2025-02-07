@@ -121,45 +121,67 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
   /* ######################################## FETCH CHANNEL ############################################### */
   useEffect(() => {
     async function fetchChannels() {
-      setIsLoading(true);
-      try {
-        console.log('objid =', objid);
-        const response = await datasource.getChannels(objid);
-        console.log('response', response);
-
-        // Check if response is JSON
-        if (!response || typeof response !== 'object') {
-          console.error("Invalid JSON response", response);
-          return;
+        if (!objid) {
+            console.warn('No objid provided for channels request');
+            return;
         }
 
-        if ('error' in response) {
-          console.error("API Error:", response.error);
-          return;
-        }
+        setIsLoading(true);
+        try {
+            console.log('Fetching channels for objid:', objid);
+            const response = await datasource.getChannels(objid);
 
-        if (Array.isArray(response.channels)) {
-          const channelOptions = response.channels.map(channel => ({
-            label: channel.channel.toString(), // Ensure label is a string
-            value: channel.channel.toString(),
-          }));
-          setLists(prev => ({
-            ...prev,
-            channels: channelOptions,
-          }));
-        } else {
-          console.error('Invalid response format:', response);
+            // Check if response is empty
+            if (!response) {
+                console.error('Empty response received');
+                setLists(prev => ({
+                    ...prev,
+                    channels: [],
+                }));
+                return;
+            }
+
+            // Check if response is JSON object
+            if (typeof response !== 'object') {
+                console.error('Invalid response format:', response);
+                return;
+            }
+
+            // Check for error in response
+            if ('error' in response) {
+                console.error('API Error:', response.error);
+                return;
+            }
+
+            // Check for channels array
+            if (!Array.isArray(response.channels)) {
+                console.error('Invalid channels format:', response);
+                return;
+            }
+
+            const channelOptions = response.channels.map(channel => ({
+                label: channel.channel.toString(),
+                value: channel.channel.toString(),
+            }));
+
+            setLists(prev => ({
+                ...prev,
+                channels: channelOptions,
+            }));
+        } catch (error) {
+            console.error('Error fetching channels:', error);
+            setLists(prev => ({
+                ...prev,
+                channels: [],
+            }));
         }
-      } catch (error) {
-        console.error('Error fetching channels:', error);
-      }
-      setIsLoading(false);
+        setIsLoading(false);
     }
 
     if (objid) {
-      fetchChannels();
+        fetchChannels();
     }
-  }, [datasource, objid]);
+}, [datasource, objid]);
 
   useEffect(() => {
     if (isRawMode) {
@@ -454,8 +476,8 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
               </InlineField>
               <InlineField
                 label="Filter Property"
-                labelWidth={16}>
-                <Select
+                labelWidth={16}
+              ><Select
                   options={lists.filterProperties}
                   value={query.filterProperty}
                   onChange={onFilterPropertyChange}

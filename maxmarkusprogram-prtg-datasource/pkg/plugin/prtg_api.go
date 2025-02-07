@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -187,6 +188,11 @@ func (a *Api) GetChannels(objid string) (*PrtgChannelValueStruct, error) {
 	body, err := a.baseExecuteRequest("historicdata.json", params)
 	if err != nil {
 		return nil, err
+	}
+
+	// Save raw response to file for debugging
+	if err := os.WriteFile("channel_response.txt", body, 0644); err != nil {
+		fmt.Printf("Warning: Could not save response to file: %v\n", err)
 	}
 
 	var response PrtgChannelValueStruct

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -249,7 +250,10 @@ func (d *Datasource) CheckHealth(_ context.Context, req *backend.CheckHealthRequ
 /* ########################################## CALL RESOURCE   ############################################ */
 
 func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
-	switch req.Path {
+	// Extract the path parts
+	pathParts := strings.Split(req.Path, "/")
+
+	switch pathParts[0] {
 	case "groups":
 		return d.handleGetGroups(sender)
 	case "devices":
@@ -257,8 +261,19 @@ func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResource
 	case "sensors":
 		return d.handleGetSensors(sender)
 	case "channels":
-		objid := req.URL
-		return d.handleGetChannel(sender, objid)
+		// Check if we have an objid in the path
+		if len(pathParts) < 2 {
+			errorResponse := map[string]string{"error": "missing objid parameter"}
+			errorJSON, _ := json.Marshal(errorResponse)
+			return sender.Send(&backend.CallResourceResponse{
+				Status: http.StatusBadRequest,
+				Headers: map[string][]string{
+					"Content-Type": {"application/json"},
+				},
+				Body: errorJSON,
+			})
+		}
+		return d.handleGetChannel(sender, pathParts[1])
 	default:
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusNotFound,
@@ -345,13 +360,28 @@ func (d *Datasource) handleGetSensors(sender backend.CallResourceResponseSender)
 }
 
 func (d *Datasource) handleGetChannel(sender backend.CallResourceResponseSender, objid string) error {
+	if objid == "" {
+		errorResponse := map[string]string{"error": "missing objid parameter"}
+		errorJSON, _ := json.Marshal(errorResponse)
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusBadRequest,
+			Headers: map[string][]string{
+				"Content-Type": {"application/json"},
+			},
+			Body: errorJSON,
+		})
+	}
+
 	channels, err := d.api.GetChannels(objid)
 	if err != nil {
-		errorResponse := map[string]string{"error": err.Error()} // JSON format error response
+		errorResponse := map[string]string{"error": err.Error()}
 		errorJSON, _ := json.Marshal(errorResponse)
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
-			Body:   errorJSON,
+			Headers: map[string][]string{
+				"Content-Type": {"application/json"},
+			},
+			Body: errorJSON,
 		})
 	}
 
@@ -361,7 +391,10 @@ func (d *Datasource) handleGetChannel(sender backend.CallResourceResponseSender,
 		errorJSON, _ := json.Marshal(errorResponse)
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,
-			Body:   errorJSON,
+			Headers: map[string][]string{
+				"Content-Type": {"application/json"},
+			},
+			Body: errorJSON,
 		})
 	}
 

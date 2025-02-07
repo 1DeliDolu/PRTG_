@@ -32,6 +32,9 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
   }
 
   async getChannels(objid: string): Promise<PRTGChannelListResponse> {
-    return this.getResource('channels');
+    if (!objid) {
+        throw new Error('objid is required');
+    }
+    return this.getResource(`channels/${objid}`);
   }
 }
