@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { InlineField, Select, Stack, FieldSet, InlineSwitch } from '@grafana/ui'
 import { QueryEditorProps, SelectableValue } from '@grafana/data'
 import { DataSource } from '../datasource'
-import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType, propertyList,  filterPropertyList } from '../types'
+import { MyDataSourceOptions, MyQuery, queryTypeOptions, QueryType, propertyList, filterPropertyList } from '../types'
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>
 
@@ -10,7 +10,6 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
   const isMetricsMode = query.queryType === QueryType.Metrics
   const isRawMode = query.queryType === QueryType.Raw
   const isTextMode = query.queryType === QueryType.Text
-
 
   const [group, setGroup] = useState<string>('')
   const [device, setDevice] = useState<string>('')
@@ -20,7 +19,6 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
   const [channel, setChannel] = useState<string>('')
   const [objid, setObjid] = useState<string>('')
 
-
   const [lists, setLists] = useState({
     groups: [] as Array<SelectableValue<string>>,
     devices: [] as Array<SelectableValue<string>>,
@@ -29,200 +27,197 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     values: [] as Array<SelectableValue<string>>,
     properties: [] as Array<SelectableValue<string>>,
     filterProperties: [] as Array<SelectableValue<string>>,
-  });
+  })
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false)
   /* ############################################## FETCH GROUPS ####################################### */
   useEffect(() => {
     async function fetchGroups() {
-      setIsLoading(true);
+      setIsLoading(true)
       try {
-        const response = await datasource.getGroups();
+        const response = await datasource.getGroups()
         if (response && Array.isArray(response.groups)) {
-          const groupOptions = response.groups.map(group => ({
+          const groupOptions = response.groups.map((group) => ({
             label: group.group,
             value: group.group.toString(),
-          }));
-          setLists(prev => ({
+          }))
+          setLists((prev) => ({
             ...prev,
             groups: groupOptions,
-          }));
+          }))
         } else {
-          console.error('Invalid response format:', response);
+          console.error('Invalid response format:', response)
         }
       } catch (error) {
-        console.error('Error fetching groups:', error);
+        console.error('Error fetching groups:', error)
       }
-      setIsLoading(false);
+      setIsLoading(false)
     }
-    fetchGroups();
-  }, [datasource]);
+    fetchGroups()
+  }, [datasource])
 
   /* ########################################### FETCH DEVICES ####################################### */
   useEffect(() => {
     async function fetchDevices() {
-      setIsLoading(true);
+      setIsLoading(true)
       try {
-        const response = await datasource.getDevices();
+        const response = await datasource.getDevices()
         if (response && Array.isArray(response.devices)) {
-          const filteredDevices = group
-            ? response.devices.filter(device => device.group === group)
-            : response.devices;
+          const filteredDevices = group ? response.devices.filter((device) => device.group === group) : response.devices
 
-          const deviceOptions = filteredDevices.map(device => ({
+          const deviceOptions = filteredDevices.map((device) => ({
             label: device.device,
             value: device.device.toString(),
-          }));
-          setLists(prev => ({
+          }))
+          setLists((prev) => ({
             ...prev,
             devices: deviceOptions,
-          }));
+          }))
         } else {
-          console.error('Invalid response format:', response);
+          console.error('Invalid response format:', response)
         }
       } catch (error) {
-        console.error('Error fetching devices:', error);
+        console.error('Error fetching devices:', error)
       }
-      setIsLoading(false);
+      setIsLoading(false)
     }
-    fetchDevices();
-  }, [datasource, group]);
+    fetchDevices()
+  }, [datasource, group])
 
   /* ######################################## FETCH SENSOR ############################################### */
   useEffect(() => {
     async function fetchSensors() {
-      setIsLoading(true);
+      setIsLoading(true)
       try {
-        const response = await datasource.getSensors();
+        const response = await datasource.getSensors()
         if (response && Array.isArray(response.sensors)) {
           const filteredSensors = device
-            ? response.sensors.filter(sensor => sensor.device === device)
-            : response.sensors;
-          console.log('filteredSensors', filteredSensors);
-          const sensorOptions = filteredSensors.map(sensor => ({
+            ? response.sensors.filter((sensor) => sensor.device === device)
+            : response.sensors
+          const sensorOptions = filteredSensors.map((sensor) => ({
             label: sensor.sensor,
             value: sensor.sensor.toString(),
-          }));
-          setLists(prev => ({
+          }))
+          setLists((prev) => ({
             ...prev,
             sensors: sensorOptions,
-          }));
+          }))
         } else {
-          console.error('Invalid response format:', response);
+          console.error('Invalid response format:', response)
         }
       } catch (error) {
-        console.error('Error fetching sensors:', error);
+        console.error('Error fetching sensors:', error)
       }
-      setIsLoading(false);
+      setIsLoading(false)
     }
-    fetchSensors();
-  }, [datasource, device]);
+    fetchSensors()
+  }, [datasource, device])
 
   /* ######################################## FETCH CHANNEL ############################################### */
+  
   useEffect(() => {
     async function fetchChannels() {
-        if (!objid) {
-            console.warn('No objid provided for channels request');
-            return;
+      if (!objid) {
+        return
+      }
+
+      setIsLoading(true)
+      try {
+        const response = await datasource.getChannels(objid)
+
+        // Check if response is empty
+        if (!response) {
+          console.error('Empty response received')
+          setLists((prev) => ({
+            ...prev,
+            channels: [],
+          }))
+          return
         }
 
-        setIsLoading(true);
-        try {
-            console.log('Fetching channels for objid:', objid);
-            const response = await datasource.getChannels(objid);
-
-            // Check if response is empty
-            if (!response) {
-                console.error('Empty response received');
-                setLists(prev => ({
-                    ...prev,
-                    channels: [],
-                }));
-                return;
-            }
-
-            // Check if response is JSON object
-            if (typeof response !== 'object') {
-                console.error('Invalid response format:', response);
-                return;
-            }
-
-            // Check for error in response
-            if ('error' in response) {
-                console.error('API Error:', response.error);
-                return;
-            }
-
-            // Check for channels array
-            if (!Array.isArray(response.channels)) {
-                console.error('Invalid channels format:', response);
-                return;
-            }
-
-            const channelOptions = response.channels.map(channel => ({
-                label: channel.channel.toString(),
-                value: channel.channel.toString(),
-            }));
-
-            setLists(prev => ({
-                ...prev,
-                channels: channelOptions,
-            }));
-        } catch (error) {
-            console.error('Error fetching channels:', error);
-            setLists(prev => ({
-                ...prev,
-                channels: [],
-            }));
+        // Check if response is JSON object
+        if (typeof response !== 'object') {
+          console.error('Invalid response format:', response)
+          return
         }
-        setIsLoading(false);
+
+        // Check for error in response
+        if ('error' in response) {
+          console.error('API Error:', response.error)
+          return
+        }
+
+        // Check for channels array
+        if (!Array.isArray(response.values)) {
+          console.error('Invalid channels format:', response)
+          return
+        }
+
+        const channelOptions = Object.keys(response.values[0] || {})
+          .filter((key) => key !== 'datetime')
+          .map((key) => ({
+            label: key,
+            value: key,
+          }))
+
+        setLists((prev) => ({
+          ...prev,
+          channels: channelOptions,
+        }))
+      } catch (error) {
+        console.error('Error fetching channels:', error)
+        setLists((prev) => ({
+          ...prev,
+          channels: [],
+        }))
+      }
+      setIsLoading(false)
     }
 
     if (objid) {
-        fetchChannels();
+      fetchChannels()
     }
-}, [datasource, objid]);
+  }, [datasource, objid])
 
   useEffect(() => {
     if (isRawMode) {
-      const propertyOptions: Array<SelectableValue<string>> = propertyList.map(item => ({
+      const propertyOptions: Array<SelectableValue<string>> = propertyList.map((item) => ({
         label: item.visible_name,
         value: item.name + 'raw',
-      }));
+      }))
 
-      const filterPropertyOptions: Array<SelectableValue<string>> = filterPropertyList.map(item => ({
+      const filterPropertyOptions: Array<SelectableValue<string>> = filterPropertyList.map((item) => ({
         label: item.visible_name,
         value: item.name + 'raw',
-      }));
+      }))
 
-      setLists(prev => ({
+      setLists((prev) => ({
         ...prev,
         properties: propertyOptions,
         filterProperties: filterPropertyOptions,
-      }));
+      }))
     }
-  }, [isRawMode]);
+  }, [isRawMode])
 
   useEffect(() => {
     if (isTextMode) {
-      const propertyOptions: Array<SelectableValue<string>> = propertyList.map(item => ({
+      const propertyOptions: Array<SelectableValue<string>> = propertyList.map((item) => ({
         label: item.visible_name,
         value: item.name,
-      }));
+      }))
 
-      const filterPropertyOptions: Array<SelectableValue<string>> = filterPropertyList.map(item => ({
+      const filterPropertyOptions: Array<SelectableValue<string>> = filterPropertyList.map((item) => ({
         label: item.visible_name,
         value: item.name,
-      }));
+      }))
 
-      setLists(prev => ({
+      setLists((prev) => ({
         ...prev,
         properties: propertyOptions,
         filterProperties: filterPropertyOptions,
-      }));
+      }))
     }
-  }, [isTextMode]);
-
+  }, [isTextMode])
 
   /* ######################################## QUERY  ############################################### */
 
@@ -230,12 +225,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     onChange({
       ...query,
       queryType: value.value!,
-     
     })
-    setGroup('')
-    setDevice('')
-    setSensor('')
-    setChannel('')
     onRunQuery()
   }
 
@@ -244,7 +234,6 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     onChange({
       ...query,
       group: value.value!,
-    
     })
     setGroup(value.value!)
     onRunQuery()
@@ -254,46 +243,41 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     onChange({
       ...query,
       device: value.value!,
-
     })
-    console.log('device', value.value!),
-      setDevice(value.value!)
+    setDevice(value.value!)
     onRunQuery()
   }
 
   const findSensorObjid = async (sensorName: string) => {
     try {
-      const response = await datasource.getSensors();
+      const response = await datasource.getSensors()
       if (response && Array.isArray(response.sensors)) {
-        const sensor = response.sensors.find(s => s.sensor === sensorName);
-        console.log('sensor Query', sensor);
+        const sensor = response.sensors.find((s) => s.sensor === sensorName)
         if (sensor) {
-          setObjid(sensor.objid.toString());
-          console.log('objid', sensor.objid.toString());
-          return sensor.objid.toString();
+          setObjid(sensor.objid.toString())
+          return sensor.objid.toString()
         } else {
-          console.error('Sensor not found:', sensorName);
+          console.error('Sensor not found:', sensorName)
         }
       } else {
-        console.error('Invalid response format:', response);
+        console.error('Invalid response format:', response)
       }
     } catch (error) {
-      console.error('Error fetching sensors:', error);
+      console.error('Error fetching sensors:', error)
     }
-    return '';
-  };
+    return ''
+  }
 
   const onSensorChange = async (value: SelectableValue<string>) => {
+    const sensorObjid = await findSensorObjid(value.value!)
     onChange({
       ...query,
       sensor: value.value!,
-      channel: ''
-    });
-    console.log('sensor', value.value!);
-    setSensor(value.value!);
-    await findSensorObjid(value.value!);
-    setChannel('');
-    onRunQuery();
+      objid: sensorObjid,
+    })
+    setSensor(value.value!)
+    setObjid(sensorObjid)
+    onRunQuery()
   }
 
   const onChannelChange = (value: SelectableValue<string>) => {
@@ -326,16 +310,11 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
     onRunQuery()
   }
 
-
   return (
     <Stack direction="column" gap={1}>
       <Stack direction="column" gap={1}>
-        <InlineField label="Query Type"
-          labelWidth={20} grow>
-          <Select options={queryTypeOptions}
-            value={query.queryType}
-            onChange={onQueryTypeChange}
-            width={47} />
+        <InlineField label="Query Type" labelWidth={20} grow>
+          <Select options={queryTypeOptions} value={query.queryType} onChange={onQueryTypeChange} width={47} />
         </InlineField>
 
         <InlineField label="Group" labelWidth={20} grow>
@@ -351,9 +330,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
             placeholder="Select Group or type '*'"
           />
         </InlineField>
-        <InlineField
-          label="Device"
-          labelWidth={20} grow>
+        <InlineField label="Device" labelWidth={20} grow>
           <Select
             isLoading={!lists.devices.length}
             options={lists.devices}
@@ -368,9 +345,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
         </InlineField>
       </Stack>
       <Stack direction="column" gap={1}>
-        <InlineField
-          label="Sensor"
-          labelWidth={20} grow>
+        <InlineField label="Sensor" labelWidth={20} grow>
           <Select
             isLoading={!lists.sensors.length}
             options={lists.sensors}
@@ -384,9 +359,7 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
           />
         </InlineField>
 
-        <InlineField
-          label="Channel"
-          labelWidth={20} grow>
+        <InlineField label="Channel" labelWidth={20} grow>
           <Select
             isLoading={!lists.channels.length}
             options={lists.channels}
@@ -401,93 +374,58 @@ export function QueryEditor({ query, onChange, onRunQuery, datasource }: Props) 
         </InlineField>
       </Stack>
 
+      {isMetricsMode && (
+        <FieldSet label="Options">
+          <Stack direction="row" gap={1}>
+            <InlineField label="Include Group" labelWidth={16}>
+              <InlineSwitch value={query.includeGroupName || false} onChange={onIncludeGroupName} />
+            </InlineField>
 
-      {
-        isMetricsMode && (
-          <FieldSet
-            label="Options">
-            <Stack
-              direction="row"
-              gap={1}>
-              <InlineField
-                label="Include Group"
-                labelWidth={16}>
-                <InlineSwitch
-                  value={query.includeGroupName || false}
-                  onChange={onIncludeGroupName} />
-              </InlineField>
+            <InlineField label="Include Device" labelWidth={15}>
+              <InlineSwitch value={query.includeDeviceName || false} onChange={onIncludeDeviceName} />
+            </InlineField>
 
-              <InlineField label="Include Device"
-                labelWidth={15}>
-                <InlineSwitch
-                  value={query.includeDeviceName || false}
-                  onChange={onIncludeDeviceName} />
-              </InlineField>
+            <InlineField label="Include Sensor" labelWidth={15}>
+              <InlineSwitch value={query.includeSensorName || false} onChange={onIncludeSensorName} />
+            </InlineField>
+          </Stack>
+        </FieldSet>
+      )}
 
-              <InlineField
-                label="Include Sensor"
-                labelWidth={15}>
-                <InlineSwitch
-                  value={query.includeSensorName || false}
-                  onChange={onIncludeSensorName} />
-              </InlineField>
-            </Stack>
-          </FieldSet>
-        )
-      }
-
-      {
-        isTextMode && (
-          <FieldSet label="Options">
-            <Stack direction="row" gap={1}>
-              <InlineField label="Property"
-                labelWidth={16}>
-                <Select
-                  options={lists.properties}
-                  value={query.property}
-                  onChange={onPropertyChange}
-                  width={32} />
-              </InlineField>
-              <InlineField
-                label="Filter Property"
-                labelWidth={16}>
-                <Select
-                  options={lists.filterProperties}
-                  value={query.filterProperty}
-                  onChange={onFilterPropertyChange}
-                  width={32}
-                />
-              </InlineField>
-            </Stack>
-          </FieldSet>
-        )
-      }
-      {
-        isRawMode && (
-          <FieldSet label="Options">
-            <Stack direction="row" gap={1}>
-              <InlineField label="Property"
-                labelWidth={16}>
-                <Select
-                  options={lists.properties}
-                  value={query.property}
-                  onChange={onPropertyChange}
-                  width={32} />
-              </InlineField>
-              <InlineField
-                label="Filter Property"
-                labelWidth={16}
-              ><Select
-                  options={lists.filterProperties}
-                  value={query.filterProperty}
-                  onChange={onFilterPropertyChange}
-                  width={32}
-                />
-              </InlineField>
-            </Stack>
-          </FieldSet>
-        )
-      }
-    </Stack >
+      {isTextMode && (
+        <FieldSet label="Options">
+          <Stack direction="row" gap={1}>
+            <InlineField label="Property" labelWidth={16}>
+              <Select options={lists.properties} value={query.property} onChange={onPropertyChange} width={32} />
+            </InlineField>
+            <InlineField label="Filter Property" labelWidth={16}>
+              <Select
+                options={lists.filterProperties}
+                value={query.filterProperty}
+                onChange={onFilterPropertyChange}
+                width={32}
+              />
+            </InlineField>
+          </Stack>
+        </FieldSet>
+      )}
+      {isRawMode && (
+        <FieldSet label="Options">
+          <Stack direction="row" gap={1}>
+            <InlineField label="Property" labelWidth={16}>
+              <Select options={lists.properties} value={query.property} onChange={onPropertyChange} width={32} />
+            </InlineField>
+            <InlineField label="Filter Property" labelWidth={16}>
+              <Select
+                options={lists.filterProperties}
+                value={query.filterProperty}
+                onChange={onFilterPropertyChange}
+                width={32}
+              />
+            </InlineField>
+          </Stack>
+        </FieldSet>
+      )}
+    </Stack>
   )
 }

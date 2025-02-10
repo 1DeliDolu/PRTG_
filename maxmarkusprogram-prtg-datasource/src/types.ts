@@ -11,7 +11,7 @@ export interface MyQuery extends DataQuery {
   group: string;
   device: string;
   sensor: string;
-  objid: number;
+  objid: number | string;
   channel: string;
   queryType: QueryType;
   property: string;
@@ -123,14 +123,12 @@ export interface PRTGSensorResponse {
 export interface PRTGChannelListResponse {
   prtgversion: string;
   treesize: number;
-  channels: PRTGItemChannel[];
+  values: PRTGItemChannel[];
 }
 
 export interface PRTGItemChannel {
-  value: string;
+  [key: string]: number | string;
   datetime: string;
-
-  [key: string]: string | number; 
 }
 
 export const filterPropertyList = [

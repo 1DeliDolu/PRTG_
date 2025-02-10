@@ -201,16 +201,17 @@ func (a *Api) GetChannels(objid string) (*PrtgChannelValueStruct, error) {
 	}
 
 	return &response, nil
-}
 
-// GetHistoricalData performs a historical data query for a specific sensor
+}
+// GetHistoricalData retrieves historical data for the given sensor ID and time range
 func (a *Api) GetHistoricalData(sensorID string, startDate, endDate time.Time) (*PrtgHistoricalDataResponse, error) {
 	if sensorID == "" {
 		return nil, fmt.Errorf("invalid query: missing sensor ID")
 	}
-
-	// Calculate time difference in hours
-	hours := endDate.Sub(startDate).Hours()
+	// Convert dates to Unix timestamps and calculate hours
+	dateFrom := startDate.Unix()/1000
+	dateTo := endDate.Unix()/1000
+	hours := float64(dateTo - dateFrom) / 3600
 
 	// Determine averaging interval based on time range
 	var avg string
@@ -226,16 +227,20 @@ func (a *Api) GetHistoricalData(sensorID string, startDate, endDate time.Time) (
 	}
 
 	// Format dates in PRTG format (YYYY-MM-DD-HH-mm-ss)
-	formatDate := func(t time.Time) string {
-		return t.Format("2025-02-06-15-04-05") // PRTG format yyyy-mm-dd-hh-mm-ss
+	sdate := startDate.Format("2006-01-02-15-04-05")
+	edate := endDate.Format("2006-01-02-15-04-05")
+
+	// Validate sensor ID
+	if _, err := fmt.Sscanf(sensorID, "%d", new(int)); err != nil {
+		return nil, fmt.Errorf("invalid sensor ID format")
 	}
 
-	// Prepare parameters
+	// Build parameters
 	params := map[string]string{
 		"id":         sensorID,
 		"avg":        avg,
-		"sdate":      formatDate(startDate),
-		"edate":      formatDate(endDate),
+		"sdate":      sdate,
+		"edate":      edate,
 		"count":      "50000",
 		"usecaption": "1",
 		"columns":    "datetime,value_",
@@ -257,3 +262,6 @@ func (a *Api) GetHistoricalData(sensorID string, startDate, endDate time.Time) (
 
 	return &response, nil
 }
+
+
+

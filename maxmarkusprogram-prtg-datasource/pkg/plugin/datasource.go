@@ -78,122 +78,127 @@ func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataReques
 
 func (d *Datasource) query(_ context.Context, _ backend.PluginContext, query backend.DataQuery) backend.DataResponse {
 	var response backend.DataResponse
-
-	// Unmarshal the JSON into our queryModel.
 	var qm queryModel
 
+	// Unmarshal the JSON into our queryModel
 	err := json.Unmarshal(query.JSON, &qm)
 	if err != nil {
 		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("json unmarshal: %v", err.Error()))
 	}
 
-	// create data frame response.
+	// Debug print
+	fmt.Printf("Query Model: %+v\n", qm)
+	fmt.Printf("Time Range: From=%v To=%v\n", query.TimeRange.From, query.TimeRange.To)
+
+	// Create data frame
 	frame := data.NewFrame("response")
 
-	// add fields based on query type
 	switch qm.QueryType {
-	case "Metrics":
-		historicalData, err := d.api.GetHistoricalData(qm.Sensor, query.TimeRange.From, query.TimeRange.To)
+	case "metrics":
+		if qm.ObjectId == "" {
+			return backend.ErrDataResponse(backend.StatusBadRequest, "missing objid parameter")
+		}
+
+		historicalData, err := d.api.GetHistoricalData(qm.ObjectId, query.TimeRange.From, query.TimeRange.To)
 		if err != nil {
 			return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching historical data: %v", err))
 		}
 
-		times := make([]time.Time, len(historicalData.HistData))
-		values := make([]float64, len(historicalData.HistData))
-		for i, data := range historicalData.HistData {
-			parsedTime, err := time.Parse("2006-01-02 15:04:05", data.Datetime)
+		// Create time and value slices
+		times := make([]time.Time, 0, len(historicalData.HistData))
+		values := make([]float64, 0, len(historicalData.HistData))
+
+		// Process the historical data
+		for _, data := range historicalData.HistData {
+			// Parse PRTG's datetime format
+			parsedTime, err := time.Parse("2006-01-02-15-04-05", data.Datetime)
 			if err != nil {
-				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error parsing datetime: %v", err))
+				fmt.Printf("Warning: Failed to parse time '%s': %v\n", data.Datetime, err)
+				continue
 			}
-			times[i] = parsedTime
-			values[i] = data.Value
+
+			if value, ok := d.extractValue(data.Value, qm.Channel); ok {
+				times = append(times, parsedTime)
+				values = append(values, value)
+				fmt.Printf("Added datapoint: time=%v value=%v\n", parsedTime, value)
+			}
 		}
 
+		if len(times) == 0 {
+			return backend.ErrDataResponse(backend.StatusInternal, "no valid data points found")
+		}
+
+		// Add fields to the frame
 		frame.Fields = append(frame.Fields,
 			data.NewField("time", nil, times),
-			data.NewField("values", nil, values),
+			data.NewField("value", nil, values).SetConfig(&data.FieldConfig{
+				DisplayName: d.createDisplayName(qm),
+			}),
 		)
-		if qm.IncludeGroupName {
-			frame.Fields = append(frame.Fields, data.NewField("group", nil, []string{qm.Group}))
-		}
-		if qm.IncludeDeviceName {
-			frame.Fields = append(frame.Fields, data.NewField("device", nil, []string{qm.Device}))
-		}
-		if qm.IncludeSensorName {
-			frame.Fields = append(frame.Fields, data.NewField("sensor", nil, []string{qm.Sensor}))
-		}
-	case "Text":
-		switch qm.Property {
-		case "group":
-			groupData, err := d.api.GetGroups()
-			if err != nil {
-				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching group data: %v", err))
-			}
-			filterProperties := extractFilterProperties(groupData.Groups, qm.FilterProperty)
-			frame.Fields = append(frame.Fields,
-				data.NewField("property", nil, []string{qm.Property}),
-				data.NewField("filterProperty", nil, filterProperties),
-			)
-		case "device":
-			deviceData, err := d.api.GetDevices()
-			if err != nil {
-				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching device data: %v", err))
-			}
-			filterProperties := extractFilterProperties(deviceData.Devices, qm.FilterProperty)
-			frame.Fields = append(frame.Fields,
-				data.NewField("property", nil, []string{qm.Property}),
-				data.NewField("filterProperty", nil, filterProperties),
-			)
-		case "sensor":
-			sensorData, err := d.api.GetSensors()
-			if err != nil {
-				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching sensor data: %v", err))
-			}
-			filterProperties := extractFilterProperties(sensorData.Sensors, qm.FilterProperty)
-			frame.Fields = append(frame.Fields,
-				data.NewField("property", nil, []string{qm.Property}),
-				data.NewField("filterProperty", nil, filterProperties),
-			)
-		}
-	case "Raw":
-		switch qm.Property {
-		case "group":
-			groupData, err := d.api.GetGroups()
-			if err != nil {
-				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching group data: %v", err))
-			}
-			filterProperties := extractFilterProperties(groupData.Groups, qm.FilterProperty+"raw")
-			frame.Fields = append(frame.Fields,
-				data.NewField("property", nil, []string{qm.Property + "raw"}),
-				data.NewField("filterProperty", nil, filterProperties),
-			)
-		case "device":
-			deviceData, err := d.api.GetDevices()
-			if err != nil {
-				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching device data: %v", err))
-			}
-			filterProperties := extractFilterProperties(deviceData.Devices, qm.FilterProperty+"raw")
-			frame.Fields = append(frame.Fields,
-				data.NewField("property", nil, []string{qm.Property + "raw"}),
-				data.NewField("filterProperty", nil, filterProperties),
-			)
-		case "sensor":
-			sensorData, err := d.api.GetSensors()
-			if err != nil {
-				return backend.ErrDataResponse(backend.StatusInternal, fmt.Sprintf("error fetching sensor data: %v", err))
-			}
-			filterProperties := extractFilterProperties(sensorData.Sensors, qm.FilterProperty+"raw")
-			frame.Fields = append(frame.Fields,
-				data.NewField("property", nil, []string{qm.Property + "raw"}),
-				data.NewField("filterProperty", nil, filterProperties),
-			)
+
+	default:
+		return backend.ErrDataResponse(backend.StatusBadRequest, fmt.Sprintf("unknown query type: %s", qm.QueryType))
+	}
+
+	response.Frames = append(response.Frames, frame)
+	return response
+}
+
+// Add this helper function to try multiple time formats
+func parseMultipleTimeFormats(timeStr string) (time.Time, error) {
+	formats := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-03-15-04-05",
+	}
+
+	for _, format := range formats {
+		if t, err := time.Parse(format, timeStr); err == nil {
+			return t, nil
 		}
 	}
 
-	// add the frames to the response.
-	response.Frames = append(response.Frames, frame)
+	return time.Time{}, fmt.Errorf("could not parse time string: %s", timeStr)
+}
 
-	return response
+func (d *Datasource) extractValue(values map[string]interface{}, channel string) (float64, bool) {
+	if channel != "" && channel != "*" {
+		// Look for specific channel
+		for k, v := range values {
+			if strings.EqualFold(k, channel) {
+				if fVal, ok := v.(float64); ok {
+					return fVal, true
+				}
+			}
+		}
+	} else {
+		// Take first numeric value
+		for _, v := range values {
+			if fVal, ok := v.(float64); ok {
+				return fVal, true
+			}
+		}
+	}
+	return 0, false
+}
+
+func (d *Datasource) createDisplayName(qm queryModel) string {
+	parts := []string{}
+	if qm.ObjectId != "" {
+		parts = append(parts, fmt.Sprintf("ID: %s", qm.ObjectId))
+	}
+	if qm.IncludeGroupName && qm.Group != "" {
+		parts = append(parts, qm.Group)
+	}
+	if qm.IncludeDeviceName && qm.Device != "" {
+		parts = append(parts, qm.Device)
+	}
+	if qm.IncludeSensorName && qm.Sensor != "" {
+		parts = append(parts, qm.Sensor)
+	}
+	if qm.Channel != "" {
+		parts = append(parts, qm.Channel)
+	}
+	return strings.Join(parts, " - ")
 }
 
 // extractFilterProperties extracts the filter properties from the given data
@@ -274,6 +279,20 @@ func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResource
 			})
 		}
 		return d.handleGetChannel(sender, pathParts[1])
+	case "historical":
+		// Check if we have an objid in the path
+		if len(pathParts) < 2 {
+			errorResponse := map[string]string{"error": "missing objid parameter"}
+			errorJSON, _ := json.Marshal(errorResponse)
+			return sender.Send(&backend.CallResourceResponse{
+				Status: http.StatusBadRequest,
+				Headers: map[string][]string{
+					"Content-Type": {"application/json"},
+				},
+				Body: errorJSON,
+			})
+		}
+		return d.handleGetHistorical(sender, pathParts[1])
 	default:
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusNotFound,
@@ -388,6 +407,54 @@ func (d *Datasource) handleGetChannel(sender backend.CallResourceResponseSender,
 	body, err := json.Marshal(channels)
 	if err != nil {
 		errorResponse := map[string]string{"error": fmt.Sprintf("error marshaling channels: %v", err)}
+		errorJSON, _ := json.Marshal(errorResponse)
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusInternalServerError,
+			Headers: map[string][]string{
+				"Content-Type": {"application/json"},
+			},
+			Body: errorJSON,
+		})
+	}
+
+	return sender.Send(&backend.CallResourceResponse{
+		Status: http.StatusOK,
+		Headers: map[string][]string{
+			"Content-Type": {"application/json"},
+		},
+		Body: body,
+	})
+}
+
+func (d *Datasource) handleGetHistorical(sender backend.CallResourceResponseSender, objid string) error {
+	if objid == "" {
+		errorResponse := map[string]string{"error": "missing objid parameter"}
+		errorJSON, _ := json.Marshal(errorResponse)
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusBadRequest,
+			Headers: map[string][]string{
+				"Content-Type": {"application/json"},
+			},
+			Body: errorJSON,
+		})
+	}
+
+	historicalData, err := d.api.GetHistoricalData(objid, time.Now().Add(-24*time.Hour), time.Now())
+	if err != nil {
+		errorResponse := map[string]string{"error": err.Error()}
+		errorJSON, _ := json.Marshal(errorResponse)
+		return sender.Send(&backend.CallResourceResponse{
+			Status: http.StatusInternalServerError,
+			Headers: map[string][]string{
+				"Content-Type": {"application/json"},
+			},
+			Body: errorJSON,
+		})
+	}
+
+	body, err := json.Marshal(historicalData)
+	if err != nil {
+		errorResponse := map[string]string{"error": fmt.Sprintf("error marshaling historical data: %v")}
 		errorJSON, _ := json.Marshal(errorResponse)
 		return sender.Send(&backend.CallResourceResponse{
 			Status: http.StatusInternalServerError,

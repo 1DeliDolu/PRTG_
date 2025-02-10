@@ -7,7 +7,7 @@ type PrtgTableListResponse struct {
 	Groups      []PrtgGroupListResponse    `json:"groups,omitempty" xml:"groups,omitempty"`
 	Devices     []PrtgDevicesListResponse  `json:"devices,omitempty" xml:"devices,omitempty"`
 	Sensors     []PrtgSensorsListResponse  `json:"sensors,omitempty" xml:"sensors,omitempty"`
-	Values    []PrtgChannelsListResponse `json:"channels,omitempty" xml:"channels,omitempty"`
+	Values      []PrtgChannelsListResponse `json:"channels,omitempty" xml:"channels,omitempty"`
 }
 
 //############################# GROUP LIST RESPONSE ####################################
@@ -184,9 +184,9 @@ type PrtgStatusListResponse struct {
 
 //############################# CHANNEL LIST RESPONSE ####################################
 type PrtgChannelsListResponse struct {
-	PrtgVersion string       `json:"prtg-version" xml:"prtg-version"`
-	TreeSize    int64        `json:"treesize" xml:"treesize"`
-	Values    []PrtgChannelValueStruct `json:"histdata" xml:"histdata"`
+	PrtgVersion string                   `json:"prtg-version" xml:"prtg-version"`
+	TreeSize    int64                    `json:"treesize" xml:"treesize"`
+	Values      []PrtgChannelValueStruct `json:"values" xml:"values"`
 }
 
 type PrtgChannelValueStruct map[string]interface{}
@@ -196,12 +196,12 @@ type PrtgChannelValueStruct map[string]interface{}
 type PrtgHistoricalDataResponse struct {
 	PrtgVersion string       `json:"prtg-version" xml:"prtg-version"`
 	TreeSize    int64        `json:"treesize" xml:"treesize"`
-	HistData    []PrtgValues `json:"values" xml:"values"`
+	HistData    []PrtgValues `json:"histdata" xml:"histdata"`
 }
 
 type PrtgValues struct {
-	Datetime string  `json:"datetime" xml:"datetime"`
-	Value    float64 `json:"value" xml:"value"`
+	Datetime string `json:"datetime" xml:"datetime"`
+	Value    map[string]interface{}
 }
 
 /* ##################################### QUERY MODEL #################################### */
@@ -229,6 +229,7 @@ type Sensor struct {
 
 type queryModel struct {
 	QueryType         string `json:"queryType"`
+	ObjectId          string `json:"objid"`
 	Group             string `json:"group"`
 	Device            string `json:"device"`
 	Sensor            string `json:"sensor"`
