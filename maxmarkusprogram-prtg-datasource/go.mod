@@ -4,7 +4,10 @@ go 1.22.7
 
 toolchain go1.22.12
 
-require github.com/grafana/grafana-plugin-sdk-go v0.263.0
+require (
+	github.com/grafana/grafana-plugin-sdk-go v0.263.0
+	golang.org/x/text v0.21.0
+)
 
 require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
@@ -83,7 +86,6 @@ require (
 	golang.org/x/net v0.34.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/tools v0.28.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/genproto v0.0.0-20210630183607-d20f26d13c79 // indirect
